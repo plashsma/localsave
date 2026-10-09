@@ -76,6 +76,7 @@ publisher signature or guarantee approval by Windows security software. See
 
 ## License and credit
 
-Created by **PLASHSMA**. No open-source license has been selected for this
-repository yet. Public source availability should not be described as an MIT,
-Apache or other licensed open-source release until the owner selects a license.
+Created by **PLASHSMA**. Licensed under the [MIT License](LICENSE).
+Copyright (c) 2026 PLASHSMA. This license also applies to the LocalSave 2.2.0
+release executable. Preserve the copyright and license notice when redistributing
+copies or substantial portions of the software.
