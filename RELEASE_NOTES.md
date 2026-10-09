@@ -35,3 +35,11 @@ See the repository's User guide for the complete steps.
 - Office may reject calls while busy. New files require an initial manual save.
 - The EXE is unsigned. Windows/organization policies may block it; do not disable
   protections. The SHA-256 asset is an integrity check, not a publisher signature.
+
+## License
+
+LocalSave source code and the 2.2.0 release executable are licensed under the
+[MIT License](https://github.com/plashsma/localsave/blob/main/LICENSE).
+Copyright (c) 2026 PLASHSMA. The release includes LICENSE.txt with the full terms.
+Preserve the copyright and license notice when redistributing copies or
+substantial portions of the software.
