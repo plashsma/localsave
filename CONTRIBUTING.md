@@ -2,7 +2,7 @@
 
 Start with [Building](docs/BUILDING.md). Keep source, version metadata, manifest,
 changelog and documentation consistent. Keep the executable a single portable
-file and preserve PLASHSMA credit.
+file. Preserve the copyright and MIT license notices.
 
 For a bug fix, add a regression check that exercises the reported behavior and
 run the build script. Use disposable local Office documents for live tests and
@@ -16,5 +16,5 @@ Do not commit runtime settings/logs, private documents, certificates, passwords,
 tokens, compiled scratch tools or older binaries. Attach release binaries to
 GitHub Releases rather than tracking them in Git.
 
-No open-source license has been selected yet; discuss permissions with the
-maintainer before redistributing or incorporating code under an assumed license.
+LocalSave is licensed under the [MIT License](LICENSE). Contributions submitted
+for inclusion in this project are provided under the same license.
