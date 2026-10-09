@@ -1,0 +1,24 @@
+# Build products, local tests and runtime data
+/dist/
+/artifacts/
+*.exe
+*.pdb
+*.ico
+*.log
+*.log.previous
+settings.xml
+settings.xml.tmp
+interval.txt
+mode.txt
+test-data/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Credentials must never be committed
+.env
+.env.*
+*.pfx
+*.p12
+*.key

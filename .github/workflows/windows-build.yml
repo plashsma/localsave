@@ -1,0 +1,29 @@
+name: Windows build and checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Build and test
+        shell: powershell
+        run: .\scripts\build.ps1
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalSave-windows-preview
+          path: |
+            dist/LocalSave-2.2.exe
+            dist/LocalSave-2.2.sha256
+          if-no-files-found: error
