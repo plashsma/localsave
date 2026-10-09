@@ -40,8 +40,8 @@ copy in the prepared files, commit and push. Do not force-push over remote work.
 1. Confirm the README renders with its logo, screenshot and guide links.
 2. Open **Actions** and confirm the Windows build completed successfully.
 3. Review `git status` and the tracked files for unintended personal data.
-4. Select a license before calling the project licensed open-source. This initial
-   publication does not assume an MIT or other license on the owner's behalf.
+4. Confirm the root `LICENSE` contains the MIT License and PLASHSMA copyright
+   notice. Include that notice with redistributed software and release assets.
 
 ## 4. Build and test the release
 
@@ -63,7 +63,8 @@ copy in the prepared files, commit and push. Do not force-push over remote work.
 2. Create tag **v2.2.0** from the reviewed source commit on `main`.
 3. Title it **LocalSave 2.2.0 — Preview**.
 4. Paste the release notes from [RELEASE_NOTES.md](../RELEASE_NOTES.md).
-5. Attach **LocalSave-2.2.exe** and **LocalSave-2.2.sha256**.
+5. Attach **LocalSave-2.2.exe**, its checksum, and **LICENSE.txt** containing
+   the complete MIT License and copyright notice.
 6. Mark it as a **pre-release** while live Excel verification and publisher signing
    remain incomplete, then publish.
 7. Verify the tag points to the source version used for the attached EXE.
