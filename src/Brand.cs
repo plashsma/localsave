@@ -52,6 +52,28 @@ internal static class Brand {
         return bitmap;
     }
     [DllImport("user32.dll")] static extern bool DestroyIcon(IntPtr icon);
+    internal static Bitmap WarningLogo(int size) {
+        Bitmap bitmap=new Bitmap(size,size);
+        using(Graphics g=Graphics.FromImage(bitmap)) {
+            g.SmoothingMode=SmoothingMode.AntiAlias;g.ScaleTransform(size/128f,size/128f);
+            using(GraphicsPath tile=Round(new RectangleF(2,2,124,124),28)) {
+                using(Brush fill=new LinearGradientBrush(new Rectangle(0,0,128,128),Color.FromArgb(255,194,65),Color.FromArgb(224,119,23),65f)) g.FillPath(fill,tile);
+                using(Pen rim=new Pen(Color.FromArgb(210,255,255,255),2)) g.DrawPath(rim,tile);
+            }
+            PointF[] triangle={new PointF(64,23),new PointF(109,102),new PointF(19,102)};
+            using(Brush fill=new SolidBrush(Color.FromArgb(255,249,231))) g.FillPolygon(fill,triangle);
+            using(Pen mark=new Pen(Color.FromArgb(115,58,9),9)) {mark.StartCap=mark.EndCap=LineCap.Round;g.DrawLine(mark,64,48,64,73);}
+            using(Brush dot=new SolidBrush(Color.FromArgb(115,58,9))) g.FillEllipse(dot,59,83,10,10);
+        }
+        return bitmap;
+    }
+    internal static Icon WarningIcon() {
+        using(Bitmap b=WarningLogo(64)) {
+            IntPtr handle=b.GetHicon();
+            try {using(Icon icon=System.Drawing.Icon.FromHandle(handle)) return (Icon)icon.Clone();}
+            finally {DestroyIcon(handle);}
+        }
+    }
     internal static Icon Icon() {
         using (Bitmap b = Logo(64)) {
             IntPtr h = b.GetHicon();

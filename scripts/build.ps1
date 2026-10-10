@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = '', [string]$OutputName = 'LocalSave-2.2.exe')
+param([string]$OutputDirectory = '', [string]$OutputName = 'LocalSave-2.7.0.exe')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $source = Join-Path $repoRoot 'src'
@@ -21,7 +21,7 @@ $icon = Join-Path $artifacts 'LocalSave.ico'
 if ($LASTEXITCODE -ne 0) { throw 'Icon generator compilation failed.' }
 & $iconGenerator $icon
 if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed.' }
-& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Accessibility.dll "/win32manifest:$source\app.manifest" "/win32icon:$icon" "/out:$output\$OutputName" $brand $core $excel $desktop
+& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Accessibility.dll "/resource:$repoRoot\LICENSE,LocalSave.LICENSE" "/win32manifest:$source\app.manifest" "/win32icon:$icon" "/out:$output\$OutputName" $brand $core $excel $desktop
 if ($LASTEXITCODE -ne 0) { throw 'Application compilation failed.' }
 $behaviorTests = Join-Path $artifacts 'Tests.exe'
 & $compiler /nologo /target:exe /main:Tests /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "/out:$behaviorTests" $brand $core $excel (Join-Path $tests 'Tests.cs')

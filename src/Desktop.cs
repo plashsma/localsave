@@ -9,11 +9,11 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("LocalSave")]
 [assembly: AssemblyProduct("LocalSave")]
-[assembly: AssemblyDescription("Local automatic saving for desktop Word, Excel and PowerPoint")]
+[assembly: AssemblyDescription("Local automatic saving for Office, Photoshop and Illustrator")]
 [assembly: AssemblyCompany("PLASHSMA")]
 [assembly: AssemblyCopyright("Created by PLASHSMA")]
-[assembly: AssemblyVersion("2.2.0.0")]
-[assembly: AssemblyFileVersion("2.2.0.0")]
+[assembly: AssemblyVersion("2.7.0.0")]
+[assembly: AssemblyFileVersion("2.7.0.0")]
 
 internal static class Program {
     [STAThread] static int Main(string[] args) {
@@ -27,6 +27,14 @@ internal static class Program {
                     using(Bitmap image=new Bitmap(window.Width,window.Height)) {window.DrawToBitmap(image,new Rectangle(Point.Empty,image.Size));image.Save(Path.Combine(args[1],"localsave-"+i+".png"));}
                 }
             }
+            using(AppIntervalsDialog dialog=new AppIntervalsDialog(new int[]{1,2,5,30,15},30,false)) {
+                dialog.StartPosition=FormStartPosition.Manual;dialog.Location=new Point(-32000,-32000);dialog.ShowInTaskbar=false;dialog.Show();dialog.Hide();
+                using(Bitmap image=new Bitmap(dialog.Width,dialog.Height)) {dialog.DrawToBitmap(image,new Rectangle(Point.Empty,image.Size));image.Save(Path.Combine(args[1],"localsave-intervals.png"));}
+            }
+            using(HealthSettingsDialog dialog=new HealthSettingsDialog(true,120)) {
+                dialog.StartPosition=FormStartPosition.Manual;dialog.Location=new Point(-32000,-32000);dialog.ShowInTaskbar=false;dialog.Show();dialog.Hide();
+                using(Bitmap image=new Bitmap(dialog.Width,dialog.Height)) {dialog.DrawToBitmap(image,new Rectangle(Point.Empty,image.Size));image.Save(Path.Combine(args[1],"localsave-warnings.png"));}
+            }
             return 0;
         }
         bool owner;
@@ -34,11 +42,65 @@ internal static class Program {
             if(!owner) {MessageBox.Show("LocalSave or an earlier version is already running. Open its tray icon, or exit it before starting this version.","LocalSave",MessageBoxButtons.OK,MessageBoxIcon.Information);return 0;}
             try {
                 Preferences p=Store.Load();
-                using(MainWindow window=new MainWindow(p,false,Array.IndexOf(args,"--background")>=0)) Application.Run(window);
+                bool startupFailed=false;
+                try {if(Store.RefreshStartup(Application.ExecutablePath)) Store.Log("Enabled Windows startup updated to the current app version.");}
+                catch {startupFailed=true;Store.Log("Preferences loaded; Windows startup update failed. Apply settings to retry.");}
+                using(MainWindow window=new MainWindow(p,false,Array.IndexOf(args,"--background")>=0)) {
+                    if(startupFailed) window.Shown+=delegate {MessageBox.Show(window,"Your saved preferences are loaded, but Windows startup could not be updated. In Save settings, click Apply settings to retry.","Startup needs attention",MessageBoxButtons.OK,MessageBoxIcon.Warning);};
+                    Application.Run(window);
+                }
                 return 0;
-            } catch(Exception ex) {MessageBox.Show("LocalSave could not start.\r\n\r\n"+ex.Message,"LocalSave",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
+            } catch(Exception ex) {MessageBox.Show("LocalSave encountered an error.\r\n\r\n"+ex.Message,"LocalSave",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
             finally {mutex.ReleaseMutex();}
         }
+    }
+}
+
+internal sealed class HealthSettingsDialog : Form {
+    readonly CheckBox EnabledBox;
+    readonly NumericUpDown Delay;
+    internal bool WarningsEnabled {get {return EnabledBox.Checked;}}
+    internal int WarningSeconds {get {return (int)Delay.Value;}}
+    internal HealthSettingsDialog(bool enabled,int seconds) {
+        Text="LocalSave - Save warnings";Icon=Brand.Icon();ClientSize=new Size(540,320);
+        FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;StartPosition=FormStartPosition.CenterParent;
+        Font=new Font("Segoe UI",10f);ForeColor=Brand.Ink;BackColor=Brand.Paper;AutoScaleMode=AutoScaleMode.Dpi;
+        GlassPage page=new GlassPage {Dock=DockStyle.Fill};Controls.Add(page);
+        page.Controls.Add(new Label {Text="Know when saving needs help.",Left=24,Top=24,Width=492,Height=40,Font=new Font("Segoe UI",18,FontStyle.Bold),BackColor=Color.Transparent});
+        EnabledBox=new CheckBox {Text="Show save-health status and tray warnings",Left=26,Top=82,Width=490,Height=28,Checked=enabled,BackColor=Color.Transparent};page.Controls.Add(EnabledBox);
+        page.Controls.Add(new Label {Text="Warn after unsaved changes remain for",Left=26,Top=129,Width=300,Height=28,BackColor=Color.Transparent});
+        Delay=new NumericUpDown {Left=332,Top=125,Width=82,Minimum=15,Maximum=3600,Value=seconds,AccessibleName="Save warning delay in seconds",Enabled=enabled};page.Controls.Add(Delay);
+        page.Controls.Add(new Label {Text="seconds",Left=426,Top=129,Width=90,Height=28,BackColor=Color.Transparent});
+        EnabledBox.CheckedChanged+=delegate {Delay.Enabled=EnabledBox.Checked;};
+        page.Controls.Add(new Label {Text="Warnings require detected unsaved changes. Longer app intervals get an extra 30 seconds. Pausing suppresses warnings.\r\nOne notice per unresolved episode; notices are at least a minute apart.",Left=26,Top=174,Width=488,Height=82,ForeColor=Brand.Muted,BackColor=Color.Transparent,Font=new Font("Segoe UI",9)});
+        GlassButton cancel=new GlassButton {Text="Cancel",Left=266,Top=266,Width=116,Height=36,DialogResult=DialogResult.Cancel,BackColor=Color.FromArgb(244,249,255),ForeColor=Brand.Ink};page.Controls.Add(cancel);
+        GlassButton done=new GlassButton {Text="Use warnings",Left=394,Top=266,Width=122,Height=36,DialogResult=DialogResult.OK,BackColor=Brand.Teal,ForeColor=Color.White};page.Controls.Add(done);
+        AcceptButton=done;CancelButton=cancel;
+    }
+}
+
+internal sealed class AppIntervalsDialog : Form {
+    readonly NumericUpDown[] Inputs=new NumericUpDown[5];
+    internal int[] Values {get {int[] values=new int[5];for(int i=0;i<5;i++) values[i]=(int)Inputs[i].Value;return values;}}
+    internal AppIntervalsDialog(int[] values,int defaultSeconds,bool afterChanges) {
+        Text="LocalSave - App intervals";Icon=Brand.Icon();ClientSize=new Size(540,440);
+        FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;StartPosition=FormStartPosition.CenterParent;
+        Font=new Font("Segoe UI",10f);ForeColor=Brand.Ink;BackColor=Brand.Paper;AutoScaleMode=AutoScaleMode.Dpi;
+        GlassPage page=new GlassPage {Dock=DockStyle.Fill};Controls.Add(page);
+        page.Controls.Add(new Label {Text="A rhythm for each app.",Left=24,Top=24,Width=490,Height=40,Font=new Font("Segoe UI",20,FontStyle.Bold),BackColor=Color.Transparent});
+        page.Controls.Add(new Label {Text="0 uses your default of "+defaultSeconds+" seconds. Range: 1-3600.",Left=26,Top=72,Width=490,Height=28,ForeColor=Brand.Muted,BackColor=Color.Transparent});
+        Card card=new Card(24,110,492,224);page.Controls.Add(card);
+        string[] names={"Word","Excel","PowerPoint","Photoshop","Illustrator"};
+        for(int i=0;i<5;i++) {
+            int y=16+i*40;
+            card.Controls.Add(new Label {Text=names[i],Left=20,Top=y+3,Width=210,Height=28,BackColor=Color.Transparent});
+            Inputs[i]=new NumericUpDown {Left=274,Top=y,Width=90,Minimum=0,Maximum=3600,Value=values[i],AccessibleName=names[i]+" interval in seconds"};card.Controls.Add(Inputs[i]);
+            card.Controls.Add(new Label {Text="seconds",Left=378,Top=y+3,Width=90,Height=28,ForeColor=Brand.Muted,BackColor=Color.Transparent});
+        }
+        page.Controls.Add(new Label {Text=afterChanges?"After changes is active. These intervals apply when you switch to At an interval.":"Each app runs independently. Large saves may take longer than the interval.",Left=26,Top=346,Width=488,Height=40,ForeColor=Brand.Muted,BackColor=Color.Transparent,Font=new Font("Segoe UI",9)});
+        GlassButton cancel=new GlassButton {Text="Cancel",Left=266,Top=390,Width=116,Height=36,DialogResult=DialogResult.Cancel,BackColor=Color.FromArgb(244,249,255),ForeColor=Brand.Ink};page.Controls.Add(cancel);
+        GlassButton done=new GlassButton {Text="Use intervals",Left=394,Top=390,Width=122,Height=36,DialogResult=DialogResult.OK,BackColor=Brand.Teal,ForeColor=Color.White};page.Controls.Add(done);
+        AcceptButton=done;CancelButton=cancel;
     }
 }
 
@@ -167,37 +229,48 @@ internal sealed class MainWindow : Form {
     }
     readonly bool Preview,Background;
     Preferences Settings;
-    SaveWorker Worker;
+    SaveCoordinator Worker;
     NotifyIcon Tray;
+    Icon WarningTrayIcon=Brand.WarningIcon();
     Panel[] Pages=new Panel[3];GlassButton[] Navigation=new GlassButton[3];
     Label Status,StatusDetail,Count,Last,Scope,Mode,Note;
-    Label[] AppStatus=new Label[3];
+    Label[] AppStatus=new Label[5];
     GlassButton PauseButton;
     ToolStripMenuItem TrayPause;
     RadioButton IntervalRadio,ChangesRadio;
     NumericUpDown Seconds;
-    CheckBox Word,Excel,PowerPoint,Limit,Startup;
+    int[] AppSeconds;
+    bool WarningEnabled;
+    int WarningSeconds;
+    readonly SaveHealth Health=new SaveHealth();
+    System.Windows.Forms.Timer HealthTimer;
+    CheckBox Word,Excel,PowerPoint,Photoshop,Illustrator,Limit,Startup;
     TextBox Folder;
     bool Paused,Quitting;
     ProgressState Latest=new ProgressState();
     System.Windows.Forms.Timer UninstallTimer;
 
-    internal MainWindow(Preferences settings,bool preview,bool background) {
+    readonly bool? StartupState;
+    internal MainWindow(Preferences settings,bool preview,bool background,bool? startupState=null) {
+        StartupState=startupState;
         Preview=preview;Background=background;Settings=settings.Copy();
+        AppSeconds=new int[]{Settings.WordInterval,Settings.ExcelInterval,Settings.PowerPointInterval,Settings.PhotoshopInterval,Settings.IllustratorInterval};
+        WarningEnabled=Settings.SaveHealthWarnings;WarningSeconds=Settings.HealthWarningSeconds;
         Text="LocalSave";Icon=Brand.Icon();ClientSize=new Size(960,720);MinimumSize=MaximumSize=Size;
         FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;
         AutoScaleDimensions=new SizeF(96,96);AutoScaleMode=AutoScaleMode.Dpi;
         Font=new Font("Segoe UI",10f);ForeColor=Brand.Ink;BackColor=Brand.Paper;
         Build(); SelectPage(0);ApplyLabels();
         if(!preview) {
-            Worker=new SaveWorker(Settings);Worker.Changed+=OnProgress;
+            Worker=new SaveCoordinator(Settings);Worker.Changed+=OnProgress;
+            HealthTimer=new System.Windows.Forms.Timer {Interval=1000};HealthTimer.Tick+=delegate {if(!Quitting) RefreshStatus();};HealthTimer.Start();
             Tray=new NotifyIcon {Icon=Icon,Text="LocalSave - checking for changes",Visible=true};
             ContextMenuStrip menu=new ContextMenuStrip();menu.Items.Add("Open LocalSave",null,delegate {Reveal();});
             TrayPause=new ToolStripMenuItem("Pause saving",null,delegate {TogglePause();});menu.Items.Add(TrayPause);
             menu.Items.Add("Save now",null,delegate {Worker.SaveNow();});
             menu.Items.Add("Activity log",null,delegate {OpenLog();});menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Exit",null,delegate {ExitApp();});Tray.ContextMenuStrip=menu;Tray.DoubleClick+=delegate {Reveal();};
-            Shown+=delegate {Store.Log("LocalSave 2.2 started. No document names or contents are logged.");Worker.Start();if(Background) Hide();};
+            Shown+=delegate {Store.Log("LocalSave 2.7.0 started. No document names or contents are logged.");Worker.Start();if(Background) Hide();};
             FormClosing+=delegate(object sender,FormClosingEventArgs e) {if(!Quitting && e.CloseReason==CloseReason.UserClosing) {e.Cancel=true;Hide();}};
         }
     }
@@ -230,17 +303,17 @@ internal sealed class MainWindow : Form {
         LabelAt(page,title,32,34,682,44,24,Brand.Ink,true);LabelAt(page,subtitle,34,83,682,32,10,Brand.Muted,false);
     }
     void BuildOverview(Panel page) {
-        Heading(page,"A little less to remember.","Automatic saving for your local Office documents.");
-        Card hero=new Card(32,128,688,132);page.Controls.Add(hero);
+        Heading(page,"A little less to remember.","Automatic saving for local documents and creative projects.");
+        Card hero=new Card(32,128,688,112);page.Controls.Add(hero);
         LabelAt(hero,"AUTOMATIC SAVING",22,17,360,22,8,Brand.Teal,true);
-        Status=LabelAt(hero,"Checking for changes",22,42,600,36,21,Brand.Ink,true);
-        StatusDetail=LabelAt(hero,"Only changed, writable local files are saved.",22,87,635,24,10,Brand.Muted,false);
-        Card apps=new Card(32,276,688,170);page.Controls.Add(apps);
-        string[] names={"Word","Excel","PowerPoint"};string[] letters={"W","X","P"};Color[] colors={Color.FromArgb(39,99,184),Color.FromArgb(24,118,76),Color.FromArgb(187,80,45)};
-        for(int i=0;i<3;i++) {
-            Label badge=LabelAt(apps,letters[i],20,18+i*49,32,30,13,Color.White,true);badge.BackColor=colors[i];badge.TextAlign=ContentAlignment.MiddleCenter;
-            LabelAt(apps,names[i],68,21+i*49,160,28,11,Brand.Ink,true);
-            AppStatus[i]=LabelAt(apps,"Waiting for application",264,17+i*49,400,42,9,Brand.Muted,false);AppStatus[i].AutoEllipsis=true;
+        Status=LabelAt(hero,"Checking for changes",22,36,600,36,21,Brand.Ink,true);
+        StatusDetail=LabelAt(hero,"Only changed, writable local files are saved.",22,77,635,24,10,Brand.Muted,false);
+        Card apps=new Card(32,250,688,202);page.Controls.Add(apps);
+        string[] names={"Word","Excel","PowerPoint","Photoshop","Illustrator"};string[] letters={"W","X","P","Ps","Ai"};Color[] colors={Color.FromArgb(39,99,184),Color.FromArgb(24,118,76),Color.FromArgb(187,80,45),Color.FromArgb(26,65,105),Color.FromArgb(136,72,17)};
+        for(int i=0;i<names.Length;i++) {
+            Label badge=LabelAt(apps,letters[i],20,12+i*37,32,28,11,Color.White,true);badge.BackColor=colors[i];badge.TextAlign=ContentAlignment.MiddleCenter;
+            LabelAt(apps,names[i],68,14+i*37,160,28,11,Brand.Ink,true);
+            AppStatus[i]=LabelAt(apps,Latest.Apps[i],264,10+i*37,400,36,8.5f,Brand.Muted,false);AppStatus[i].AutoEllipsis=true;
         }
         Card saves=new Card(32,462,334,94);page.Controls.Add(saves);LabelAt(saves,"SUCCESSFUL SAVES THIS SESSION",20,15,298,22,8,Brand.Muted,true);Count=LabelAt(saves,"0",20,42,290,40,23,Brand.Ink,true);
         Card last=new Card(382,462,338,94);page.Controls.Add(last);LabelAt(last,"LAST SUCCESSFUL SAVE",20,15,298,22,8,Brand.Muted,true);Last=LabelAt(last,"No saves yet",20,45,295,30,14,Brand.Ink,true);
@@ -255,25 +328,34 @@ internal sealed class MainWindow : Form {
     }
     void BuildSettings(Panel page) {
         Heading(page,"Set your saving rhythm.","Choose when to save and which documents LocalSave can touch.");
-        Card mode=new Card(32,128,688,144);page.Controls.Add(mode);LabelAt(mode,"WHEN TO SAVE",20,16,620,22,8,Brand.Teal,true);
+        Card mode=new Card(32,128,688,144);page.Controls.Add(mode);LabelAt(mode,"WHEN TO SAVE",20,16,350,22,8,Brand.Teal,true);
+        GlassButton warnings=ButtonAt(mode,"Save warnings...",478,8,190,false,delegate {
+            using(HealthSettingsDialog dialog=new HealthSettingsDialog(WarningEnabled,WarningSeconds))
+                if(dialog.ShowDialog(this)==DialogResult.OK) {WarningEnabled=dialog.WarningsEnabled;WarningSeconds=dialog.WarningSeconds;Note.Text="Warnings selected. Click Apply settings to save.";}
+        });warnings.Height=30;
         IntervalRadio=new RadioButton {Text="At an interval",Left=20,Top=47,Width=170,Height=28,Checked=!Settings.AfterChanges,BackColor=Color.Transparent};mode.Controls.Add(IntervalRadio);
         Seconds=new NumericUpDown {Left=208,Top=47,Width=85,Minimum=1,Maximum=3600,Value=Settings.Interval};mode.Controls.Add(Seconds);LabelAt(mode,"seconds",306,51,140,26,10,Brand.Muted,false);
-        ChangesRadio=new RadioButton {Text="After changes",Left=20,Top=87,Width=170,Height=28,Checked=Settings.AfterChanges,BackColor=Color.Transparent};mode.Controls.Add(ChangesRadio);LabelAt(mode,"Checks about every 250 ms; saves when Office is ready.",208,91,455,28,9,Brand.Muted,false);
+        ChangesRadio=new RadioButton {Text="After changes",Left=20,Top=87,Width=170,Height=28,Checked=Settings.AfterChanges,BackColor=Color.Transparent};mode.Controls.Add(ChangesRadio);LabelAt(mode,"Checks about every 250 ms; saves when the app is ready.",208,91,455,28,9,Brand.Muted,false);
         ChangesRadio.CheckedChanged+=delegate {Seconds.Enabled=!ChangesRadio.Checked;};Seconds.Enabled=!Settings.AfterChanges;
-        Card apps=new Card(32,288,688,87);page.Controls.Add(apps);LabelAt(apps,"APPLICATIONS",20,12,620,22,8,Brand.Teal,true);
+        Card apps=new Card(32,282,688,120);page.Controls.Add(apps);LabelAt(apps,"APPLICATIONS",20,10,350,22,8,Brand.Teal,true);
+        GlassButton timing=ButtonAt(apps,"App intervals...",478,8,190,false,delegate {
+            using(AppIntervalsDialog dialog=new AppIntervalsDialog(AppSeconds,(int)Seconds.Value,ChangesRadio.Checked))
+                if(dialog.ShowDialog(this)==DialogResult.OK) {AppSeconds=dialog.Values;Note.Text="App intervals selected. Click Apply settings to save.";}
+        });timing.Height=30;
         Word=Check(apps,"Word",20,42,170,Settings.Word);Excel=Check(apps,"Excel",226,42,170,Settings.Excel);PowerPoint=Check(apps,"PowerPoint",442,42,200,Settings.PowerPoint);
-        Card scope=new Card(32,391,688,137);page.Controls.Add(scope);Limit=Check(scope,"Only save files inside this folder and its subfolders",20,13,648,Settings.LimitFolder);
+        Photoshop=Check(apps,"Photoshop",20,78,170,Settings.Photoshop);Illustrator=Check(apps,"Illustrator",226,78,170,Settings.Illustrator);LabelAt(apps,"PSD / PSB and AI files",442,81,220,28,9,Brand.Muted,false);
+        Card scope=new Card(32,412,688,127);page.Controls.Add(scope);Limit=Check(scope,"Only save files inside this folder and its subfolders",20,10,648,Settings.LimitFolder);
         Folder=new TextBox {Left=20,Top=52,Width=523,Text=Settings.Folder,ReadOnly=true,BackColor=Color.White};scope.Controls.Add(Folder);
         ButtonAt(scope,"Browse",554,48,112,false,delegate {
             using(FolderBrowserDialog dialog=new FolderBrowserDialog {Description="Choose the local folder LocalSave can save in.",ShowNewFolderButton=false}) {if(dialog.ShowDialog(this)==DialogResult.OK) {Folder.Text=dialog.SelectedPath;Limit.Checked=true;}}
         });
-        LabelAt(scope,"Untitled, read-only, network and redirected paths are skipped.",20,101,648,24,9,Brand.Muted,false);
-        Card launch=new Card(32,544,688,76);page.Controls.Add(launch);Startup=Check(launch,"Start LocalSave when I sign into Windows",20,10,640,!Preview && Store.StartupEnabled());
-        LabelAt(launch,"Keep the EXE in one location. Apply settings to update its startup path.",20,44,648,24,9,Brand.Muted,false);
+        LabelAt(scope,"Save Adobe projects locally once first. Export formats are skipped.",20,96,648,24,9,Brand.Muted,false);
+        Card launch=new Card(32,549,688,76);page.Controls.Add(launch);Startup=Check(launch,"Start LocalSave when I sign into Windows",20,10,640,!Preview && (StartupState ?? Store.StartupEnabled()));
+        LabelAt(launch,"Saved in AppData. Enabled startup follows this EXE when a new version runs.",20,44,648,24,9,Brand.Muted,false);
         ButtonAt(page,"Apply settings",32,648,174,true,delegate {ApplySettings();});Note=LabelAt(page,"",224,655,496,40,9,Brand.Muted,false);
     }
     void BuildHelp(Panel page) {
-        Heading(page,"Private, with clear boundaries.","LocalSave is an independent utility for Microsoft Office on Windows.");
+        Heading(page,"Private, with clear boundaries.","Independent saving for Office and Adobe desktop apps on Windows.");
         Card privacy=new Card(32,128,688,175);page.Controls.Add(privacy);
         LabelAt(privacy,"ON YOUR COMPUTER",20,16,640,22,8,Brand.Teal,true);
         LabelAt(privacy,"No account, telemetry or keyboard recording.",20,45,640,28,12,Brand.Ink,true);
@@ -281,38 +363,72 @@ internal sealed class MainWindow : Form {
         Card help=new Card(32,319,688,197);page.Controls.Add(help);
         LabelAt(help,"HOW TO USE IT",20,15,640,22,8,Brand.Teal,true);
         LabelAt(help,"1. Save each new file once to choose its name and location.\r\n2. Leave LocalSave running; close the window to keep it in the tray.\r\n3. Check Overview for successful saves and any app delays.",20,45,645,79,10,Brand.Ink,false);
-        LabelAt(help,"Excel detects multiple desktop instances; Word and PowerPoint use one registered instance. Commit Excel cell edits first. Busy dialogs can delay saves. Keep AutoRecover and backups enabled.",20,130,645,61,9,Brand.Muted,false);
-        LabelAt(page,"PORTABLE WINDOWS APP  /  .NET FRAMEWORK 4.8+",34,534,680,22,8,Brand.Teal,true);
-        LabelAt(page,"Copy this EXE to a Windows PC with desktop Office. No administrator rights or security-setting changes are needed. This build is unsigned; Windows or your organization may block it. A publisher signature and reputation are required for smoother distribution.",34,565,680,73,9,Brand.Muted,false);
-        ButtonAt(page,"Uninstall / reset",32,648,178,false,delegate {Uninstall();});
+        LabelAt(help,"Adobe support is opt-in: existing local PSD/PSB and AI files only. One registered instance per app (Excel supports multiple). Finish edits and dialogs first. Keep recovery and backups enabled.",20,130,645,61,9,Brand.Muted,false);
+        LabelAt(page,"FREE FOR PERSONAL USE ONLY  /  .NET FRAMEWORK 4.8+",34,534,680,22,8,Brand.Teal,true);
+        LabelAt(page,"Install using LocalSave Setup. Remove the app in Windows Settings > Apps > Installed apps. Preferences stay in AppData for reinstalling; Reset preferences clears them. This preview is unsigned; Windows or your organization may block it.",34,565,680,73,9,Brand.Muted,false);
+        ButtonAt(page,"Reset preferences",32,648,178,false,delegate {Uninstall();});
         ButtonAt(page,"Exit LocalSave",224,648,162,false,delegate {ExitApp();});
-        LabelAt(page,"v2.2  |  Created by PLASHSMA",408,659,310,24,9,Brand.Muted,false);
+        LinkLabel license=new LinkLabel {Text="Personal-use license",Left=408,Top=649,Width=300,Height=22,BackColor=Color.Transparent};page.Controls.Add(license);
+        license.LinkClicked+=delegate {
+            using(Stream stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("LocalSave.LICENSE")) {
+                if(stream!=null) using(StreamReader reader=new StreamReader(stream)) {
+                    using(Form terms=new Form {Text="LocalSave Personal Use License",Size=new Size(800,580),StartPosition=FormStartPosition.CenterParent}) {
+                        TextBox text=new TextBox {Multiline=true,ReadOnly=true,Dock=DockStyle.Fill,ScrollBars=ScrollBars.Vertical,Font=new Font("Segoe UI",10),Text=reader.ReadToEnd()};terms.Controls.Add(text);terms.ShowDialog(this);
+                    }
+                }
+            }
+        };
+        LabelAt(page,"v2.7.0  |  Created by PLASHSMA",408,675,310,24,9,Brand.Muted,false);
     }
     internal void SelectPage(int index) {
         for(int i=0;i<3;i++) {Pages[i].Visible=i==index;Navigation[i].Selected=i==index;Navigation[i].BackColor=Brand.Paper;Navigation[i].ForeColor=i==index?Brand.Ink:Brand.Muted;Navigation[i].Invalidate();}
     }
     void ApplyLabels() {
-        Mode.Text=Settings.AfterChanges?"Save after changes  /  checks about every 250 ms":"Save every "+Settings.Interval+" second"+(Settings.Interval==1?"":"s");
-        Scope.Text=Settings.LimitFolder?"Folder restriction enabled: "+Settings.Folder:"Scope: eligible local files in your selected Office apps";Scope.AutoEllipsis=true;
+        bool custom=Settings.WordInterval!=0 || Settings.ExcelInterval!=0 || Settings.PowerPointInterval!=0 || Settings.PhotoshopInterval!=0 || Settings.IllustratorInterval!=0;
+        Mode.Text=Settings.AfterChanges?"Save after changes  /  each app checks about every 250 ms":custom?"Separate app intervals  /  default "+Settings.Interval+" seconds":"Save every "+Settings.Interval+" second"+(Settings.Interval==1?"":"s");
+        Scope.Text=Settings.LimitFolder?"Folder restriction enabled: "+Settings.Folder:"Scope: eligible local files in your selected apps";Scope.AutoEllipsis=true;
     }
     void ApplySettings() {
         if(Preview) return;
         try {
-            Preferences next=new Preferences {Interval=(int)Seconds.Value,AfterChanges=ChangesRadio.Checked,Word=Word.Checked,Excel=Excel.Checked,PowerPoint=PowerPoint.Checked,LimitFolder=Limit.Checked,Folder=Folder.Text};
-            next.Validate();Store.Save(next);Settings=next;Worker.Update(next);ApplyLabels();
+            Preferences next=new Preferences {Interval=(int)Seconds.Value,AfterChanges=ChangesRadio.Checked,Word=Word.Checked,Excel=Excel.Checked,PowerPoint=PowerPoint.Checked,Photoshop=Photoshop.Checked,Illustrator=Illustrator.Checked,LimitFolder=Limit.Checked,Folder=Folder.Text};
+            next.WordInterval=AppSeconds[0];next.ExcelInterval=AppSeconds[1];next.PowerPointInterval=AppSeconds[2];next.PhotoshopInterval=AppSeconds[3];next.IllustratorInterval=AppSeconds[4];
+            next.SaveHealthWarnings=WarningEnabled;next.HealthWarningSeconds=WarningSeconds;
+            next.Validate();Store.Save(next);Settings=next;Worker.Update(next);ApplyLabels();RefreshStatus();
             try {Store.Startup(Startup.Checked,Application.ExecutablePath);} catch(Exception ex) {Note.Text="Save settings applied; startup update failed.";MessageBox.Show(this,ex.Message,"Startup could not be updated",MessageBoxButtons.OK,MessageBoxIcon.Warning);return;}
             Note.Text="Settings saved.";
         } catch(Exception ex) {Note.Text="Settings were not applied.";MessageBox.Show(this,ex.Message,"Check settings",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
     }
     void OnProgress(ProgressState state) {
-        if(IsDisposed || !IsHandleCreated) return;
-        try {BeginInvoke((Action)delegate {if(IsDisposed) return;Latest=state;RefreshStatus();});} catch(InvalidOperationException) {}
+        if(Quitting || Disposing || IsDisposed || !IsHandleCreated) return;
+        try {BeginInvoke((Action)delegate {if(Quitting || Disposing || IsDisposed) return;Latest=state;RefreshStatus();});} catch(InvalidOperationException) {}
     }
     void RefreshStatus() {
-        Status.Text=Paused?"Automatic saving paused":(!Settings.Word && !Settings.Excel && !Settings.PowerPoint)?"No applications selected":"Checking for changes";
+        HealthReport health=Health.Evaluate(Latest,Settings,Paused,DateTime.UtcNow);
+        bool needsAttention=Array.IndexOf(health.Warnings,true)>=0;
+        Status.Text=Paused?"Automatic saving paused":(!Settings.Word && !Settings.Excel && !Settings.PowerPoint && !Settings.Photoshop && !Settings.Illustrator)?"No applications selected":"Checking for changes";
         StatusDetail.Text=Latest.LogUnavailable?"Activity log is unavailable. Check permissions on your profile folder.":Paused?"Use Resume saving to continue. Save now still works.":"Only changed, writable local files are saved.";
         Count.Text=Latest.Saves.ToString("N0");Last.Text=Latest.LastSave.HasValue?Latest.LastSave.Value.ToString("h:mm:ss tt"):"No saves yet";
-        for(int i=0;i<3;i++) AppStatus[i].Text=Latest.Apps[i];
+        Status.ForeColor=needsAttention?Color.FromArgb(153,78,15):Brand.Ink;
+        if(needsAttention) {Status.Text="Saving needs attention";StatusDetail.Text="Check the highlighted apps. Finish edits/dialogs or save manually.";}
+        for(int i=0;i<AppStatus.Length;i++) {
+            AppStatus[i].ForeColor=health.Warnings[i]?Color.FromArgb(153,78,15):Brand.Muted;
+            AppStatus[i].Text=health.Warnings[i]?"Unsaved changes need attention\n"+Latest.Apps[i].Split('\n')[0]:Latest.Apps[i];
+        }
+        if(Tray!=null) {
+            UpdateTrayStatus(needsAttention);
+            if(health.Notify.Count>0) {
+                string apps=String.Join(", ",health.Notify);
+                Store.Log(apps+": save-health warning; detected changes remain unconfirmed.");
+                Tray.ShowBalloonTip(10000,"LocalSave - saving needs attention",apps+": detected changes remain unsaved. Finish edits/dialogs or save manually. Open LocalSave for status.",ToolTipIcon.Warning);
+            }
+        }
+    }
+    internal void UpdateTrayStatus(bool needsAttention) {
+        if(Tray==null || Quitting) return;
+        Icon desired=needsAttention && !Paused?WarningTrayIcon:Icon;
+        if(!Object.ReferenceEquals(Tray.Icon,desired)) Tray.Icon=desired;
+        Tray.Text=Paused?"LocalSave - paused":needsAttention?"LocalSave - saving needs attention":"LocalSave - checking for changes";
     }
     void TogglePause() {
         if(Preview) return;
@@ -330,24 +446,34 @@ internal sealed class MainWindow : Form {
     }
     void Uninstall() {
         if(Preview) return;
-        if(MessageBox.Show(this,"Remove LocalSave's startup entry, settings and activity logs?\r\nYour Office files will not be removed. You can delete this portable EXE afterward.","Uninstall LocalSave",MessageBoxButtons.OKCancel,MessageBoxIcon.Question)!=DialogResult.OK) return;
+        if(MessageBox.Show(this,"Reset LocalSave's startup entry, preferences and activity logs?\r\nYour documents and the installed app will remain. Use Windows Settings to uninstall the app.","Reset preferences",MessageBoxButtons.OKCancel,MessageBoxIcon.Question)!=DialogResult.OK) return;
         Worker.Stop();Enabled=false;
         UninstallTimer=new System.Windows.Forms.Timer {Interval=250};int ticks=0;
         UninstallTimer.Tick+=delegate {
             ticks++;
             if(!Worker.IsStopped) {if(ticks==20) {Enabled=true;MessageBox.Show(this,"LocalSave is waiting for an Office call to finish. Close any Office save dialogs. Uninstall will continue when the worker stops.","Finishing the current operation");}return;}
             UninstallTimer.Stop();Enabled=true;
-            try {Store.Remove();MessageBox.Show(this,"Startup, settings and logs removed. LocalSave will close.\r\nYou can now delete this EXE.","Uninstalled");Quitting=true;Close();}
+            try {Store.Remove();MessageBox.Show(this,"Startup, preferences and logs removed. LocalSave will close.\r\nUse Windows Settings > Apps to remove the installed app.","Preferences reset");Quitting=true;Close();}
             catch(Exception ex) {Paused=true;MessageBox.Show(this,"Cleanup could not finish: "+ex.Message+"\r\nSaving has stopped. Exit and restart to resume.","Uninstall needs attention");}
         };
         UninstallTimer.Start();
     }
-    void ExitApp() {if(Preview) return;Quitting=true;Worker.Stop();Close();}
+    void ExitApp() {if(Preview || Quitting) return;Quitting=true;if(Worker!=null) Worker.Stop();Close();}
     protected override void Dispose(bool disposing) {
         if(disposing) {
-            if(Worker!=null) {Worker.Changed-=OnProgress;Worker.Stop();}
-            if(Tray!=null) {Tray.Visible=false;Tray.ContextMenuStrip.Dispose();Tray.Dispose();}
-            if(UninstallTimer!=null) UninstallTimer.Dispose();
+            Quitting=true;
+            System.Windows.Forms.Timer healthTimer=HealthTimer;HealthTimer=null;if(healthTimer!=null) {healthTimer.Stop();healthTimer.Dispose();}
+            SaveCoordinator worker=Worker;Worker=null;
+            if(worker!=null) {worker.Changed-=OnProgress;worker.Stop();}
+            NotifyIcon tray=Tray;Tray=null;
+            if(tray!=null) {
+                ContextMenuStrip menu=tray.ContextMenuStrip;
+                tray.ContextMenuStrip=null;tray.Visible=false;tray.Dispose();
+                if(menu!=null) menu.Dispose();
+            }
+            Icon warningIcon=WarningTrayIcon;WarningTrayIcon=null;if(warningIcon!=null) warningIcon.Dispose();
+            System.Windows.Forms.Timer timer=UninstallTimer;UninstallTimer=null;
+            if(timer!=null) {timer.Stop();timer.Dispose();}
         }
         base.Dispose(disposing);
     }

@@ -47,14 +47,16 @@ whether the presentation had been saved manually.
 ## Word or another app is busy
 
 Rejected calls can happen while typing, running a macro, calculating, or showing a
-dialog. The helper retries and leaves the controls responsive. An Office call
-that remains blocked can delay the other apps in that scan. Save manually when
+dialog. The helper retries and leaves the controls responsive. From 2.4, each
+app has an independent worker, so a blocked call delays only that app. Save manually when
 necessary; never assume the configured interval proves every save succeeded.
 
 ## Startup opens an old version
 
 Exit the old helper. Run the newest EXE, verify the startup checkbox and click
-**Apply settings** to update the path. Keep the new EXE in that location.
+**Apply settings** if an automatic startup update failed. From 2.5.2, the first
+launch automatically updates an already-enabled entry. Keep the new EXE in
+that location. Saved preferences remain in your user AppData folder.
 
 ## Windows blocks the EXE
 

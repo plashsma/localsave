@@ -1,5 +1,9 @@
 # Build and test from source
 
+For the compact single setup EXE without a bundled runtime, follow
+[Installer build instructions](INSTALLATION.md#build-the-installer). The app
+build below produces the executable that Setup embeds.
+
 ## Requirements
 
 - Windows with .NET Framework 4.8+ and its C# compiler.
@@ -28,8 +32,8 @@ require installed desktop Office and an interactive user session.
    behavior tests and UI interaction/rendering tests, and writes:
 
    ```text
-   dist/LocalSave-2.2.exe
-   dist/LocalSave-2.2.sha256
+   dist/LocalSave-2.7.0.exe
+   dist/LocalSave-2.7.0.sha256
    ```
 
 4. Optional output directory/name:
@@ -55,7 +59,7 @@ docs/        User, troubleshooting, build and publishing guides
 
 ## Validation limits
 
-Version 2.2 passed **38 behavior/settings checks and 7 UI checks** locally.
+Version 2.7.0 passed **109 behavior/settings checks and 22 UI checks** locally.
 Office-dependent tests use supplied test objects; they are not a live Office
 certification. Junction integration checks are skipped when no test junction is
 available. A complete live Office save test was not possible in the development
@@ -67,3 +71,7 @@ pause/resume, startup, and uninstall. Record the versions/architectures tested.
 
 Builds are not guaranteed byte-for-byte reproducible with the legacy compiler.
 The checksum identifies the actual EXE attached to each release.
+
+Adobe tests use test doubles. Follow [Adobe live verification](ADOBE.md) on
+disposable PSD/PSB and AI projects; live Photoshop/Illustrator saving remains
+unverified in this preview.
