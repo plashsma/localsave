@@ -12,8 +12,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Local automatic saving for Office, Photoshop and Illustrator")]
 [assembly: AssemblyCompany("PLASHSMA")]
 [assembly: AssemblyCopyright("Created by PLASHSMA")]
-[assembly: AssemblyVersion("2.7.0.0")]
-[assembly: AssemblyFileVersion("2.7.0.0")]
+[assembly: AssemblyVersion("2.8.0.0")]
+[assembly: AssemblyFileVersion("2.8.0.0")]
 
 internal static class Program {
     [STAThread] static int Main(string[] args) {
@@ -243,7 +243,10 @@ internal sealed class MainWindow : Form {
     bool WarningEnabled;
     int WarningSeconds;
     readonly SaveHealth Health=new SaveHealth();
-    System.Windows.Forms.Timer HealthTimer;
+    System.Windows.Forms.Timer HealthTimer,UpdateTimer;
+    bool CheckingUpdate,UpdateNotice,Resetting;
+    string AvailableUpdateUrl;
+    bool UpdateEnabled,PreviewUpdates;
     CheckBox Word,Excel,PowerPoint,Photoshop,Illustrator,Limit,Startup;
     TextBox Folder;
     bool Paused,Quitting;
@@ -255,6 +258,7 @@ internal sealed class MainWindow : Form {
         StartupState=startupState;
         Preview=preview;Background=background;Settings=settings.Copy();
         AppSeconds=new int[]{Settings.WordInterval,Settings.ExcelInterval,Settings.PowerPointInterval,Settings.PhotoshopInterval,Settings.IllustratorInterval};
+        UpdateEnabled=Settings.CheckForUpdates;PreviewUpdates=Settings.IncludePreviewUpdates;
         WarningEnabled=Settings.SaveHealthWarnings;WarningSeconds=Settings.HealthWarningSeconds;
         Text="LocalSave";Icon=Brand.Icon();ClientSize=new Size(960,720);MinimumSize=MaximumSize=Size;
         FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;
@@ -268,9 +272,12 @@ internal sealed class MainWindow : Form {
             ContextMenuStrip menu=new ContextMenuStrip();menu.Items.Add("Open LocalSave",null,delegate {Reveal();});
             TrayPause=new ToolStripMenuItem("Pause saving",null,delegate {TogglePause();});menu.Items.Add(TrayPause);
             menu.Items.Add("Save now",null,delegate {Worker.SaveNow();});
+            menu.Items.Add("Check for updates",null,delegate {CheckUpdate(true);});
             menu.Items.Add("Activity log",null,delegate {OpenLog();});menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Exit",null,delegate {ExitApp();});Tray.ContextMenuStrip=menu;Tray.DoubleClick+=delegate {Reveal();};
-            Shown+=delegate {Store.Log("LocalSave 2.7.0 started. No document names or contents are logged.");Worker.Start();if(Background) Hide();};
+            Tray.BalloonTipClicked+=delegate {if(UpdateNotice && AvailableUpdateUrl!=null) OpenUpdate();else Reveal();};
+            UpdateTimer=new System.Windows.Forms.Timer {Interval=60000};UpdateTimer.Tick+=delegate {CheckUpdate(false);UpdateTimer.Interval=3600000;};
+            Shown+=delegate {Store.Log("LocalSave 2.8.0 started. No document names or contents are logged.");Worker.Start();UpdateTimer.Start();if(Background) Hide();};
             FormClosing+=delegate(object sender,FormClosingEventArgs e) {if(!Quitting && e.CloseReason==CloseReason.UserClosing) {e.Cancel=true;Hide();}};
         }
     }
@@ -350,8 +357,17 @@ internal sealed class MainWindow : Form {
             using(FolderBrowserDialog dialog=new FolderBrowserDialog {Description="Choose the local folder LocalSave can save in.",ShowNewFolderButton=false}) {if(dialog.ShowDialog(this)==DialogResult.OK) {Folder.Text=dialog.SelectedPath;Limit.Checked=true;}}
         });
         LabelAt(scope,"Save Adobe projects locally once first. Export formats are skipped.",20,96,648,24,9,Brand.Muted,false);
-        Card launch=new Card(32,549,688,76);page.Controls.Add(launch);Startup=Check(launch,"Start LocalSave when I sign into Windows",20,10,640,!Preview && (StartupState ?? Store.StartupEnabled()));
-        LabelAt(launch,"Saved in AppData. Enabled startup follows this EXE when a new version runs.",20,44,648,24,9,Brand.Muted,false);
+        Card launch=new Card(32,549,688,76);page.Controls.Add(launch);Startup=Check(launch,"Start LocalSave when I sign into Windows",20,10,460,!Preview && (StartupState ?? Store.StartupEnabled()));
+        ButtonAt(launch,"Updates...",498,10,166,false,delegate {
+            using(Form dialog=new Form {Text="LocalSave - Updates",ClientSize=new Size(540,250),StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,Font=Font}) {
+                CheckBox enabled=Check(dialog,"Notify me about updates after launch",22,22,490,UpdateEnabled);
+                CheckBox previews=Check(dialog,"Include preview releases",22,58,490,PreviewUpdates);
+                LabelAt(dialog,"Checks GitHub after 60 seconds, then at most once a day. GitHub receives your IP and request metadata. No documents or preferences are sent. Downloads and installation remain your choice.",22,98,490,82,10,Brand.Muted,false);
+                ButtonAt(dialog,"Use choices",352,190,166,true,delegate {UpdateEnabled=enabled.Checked;PreviewUpdates=previews.Checked;dialog.DialogResult=DialogResult.OK;});
+                if(dialog.ShowDialog(this)==DialogResult.OK) Note.Text="Update choices selected. Click Apply settings to save.";
+            }
+        });
+        LabelAt(launch,"AppData preferences survive updates. Update checks can be turned off.",20,44,648,24,9,Brand.Muted,false);
         ButtonAt(page,"Apply settings",32,648,174,true,delegate {ApplySettings();});Note=LabelAt(page,"",224,655,496,40,9,Brand.Muted,false);
     }
     void BuildHelp(Panel page) {
@@ -359,16 +375,17 @@ internal sealed class MainWindow : Form {
         Card privacy=new Card(32,128,688,175);page.Controls.Add(privacy);
         LabelAt(privacy,"ON YOUR COMPUTER",20,16,640,22,8,Brand.Teal,true);
         LabelAt(privacy,"No account, telemetry or keyboard recording.",20,45,640,28,12,Brand.Ink,true);
-        LabelAt(privacy,"The helper makes no network requests. Logs contain app names, save counts and error codes, never document names or contents. Office may still sync files through its own services.",20,85,645,72,10,Brand.Muted,false);
+        LabelAt(privacy,"Optional update checks contact GitHub. No documents or preferences are uploaded. Logs omit document names and contents. Office may still sync files through its own services.",20,85,645,72,10,Brand.Muted,false);
         Card help=new Card(32,319,688,197);page.Controls.Add(help);
         LabelAt(help,"HOW TO USE IT",20,15,640,22,8,Brand.Teal,true);
         LabelAt(help,"1. Save each new file once to choose its name and location.\r\n2. Leave LocalSave running; close the window to keep it in the tray.\r\n3. Check Overview for successful saves and any app delays.",20,45,645,79,10,Brand.Ink,false);
         LabelAt(help,"Adobe support is opt-in: existing local PSD/PSB and AI files only. One registered instance per app (Excel supports multiple). Finish edits and dialogs first. Keep recovery and backups enabled.",20,130,645,61,9,Brand.Muted,false);
         LabelAt(page,"FREE FOR PERSONAL USE ONLY  /  .NET FRAMEWORK 4.8+",34,534,680,22,8,Brand.Teal,true);
-        LabelAt(page,"Install using LocalSave Setup. Remove the app in Windows Settings > Apps > Installed apps. Preferences stay in AppData for reinstalling; Reset preferences clears them. This preview is unsigned; Windows or your organization may block it.",34,565,680,73,9,Brand.Muted,false);
+        LabelAt(page,"Install using LocalSave Setup. Remove the app in Windows Settings > Apps > Installed apps. Preferences stay in AppData for reinstalling; Reset preferences clears them. Windows security or organization policy may show warnings or block the app.",34,565,680,73,9,Brand.Muted,false);
         ButtonAt(page,"Reset preferences",32,648,178,false,delegate {Uninstall();});
         ButtonAt(page,"Exit LocalSave",224,648,162,false,delegate {ExitApp();});
         LinkLabel license=new LinkLabel {Text="Personal-use license",Left=408,Top=649,Width=300,Height=22,BackColor=Color.Transparent};page.Controls.Add(license);
+        LinkLabel updates=new LinkLabel {Text="Check for updates",Left=408,Top=676,Width=160,Height=22,BackColor=Color.Transparent};page.Controls.Add(updates);updates.LinkClicked+=delegate {CheckUpdate(true);};
         license.LinkClicked+=delegate {
             using(Stream stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("LocalSave.LICENSE")) {
                 if(stream!=null) using(StreamReader reader=new StreamReader(stream)) {
@@ -378,7 +395,7 @@ internal sealed class MainWindow : Form {
                 }
             }
         };
-        LabelAt(page,"v2.7.0  |  Created by PLASHSMA",408,675,310,24,9,Brand.Muted,false);
+        LabelAt(page,"v2.8.0",580,675,160,24,8,Brand.Muted,false);
     }
     internal void SelectPage(int index) {
         for(int i=0;i<3;i++) {Pages[i].Visible=i==index;Navigation[i].Selected=i==index;Navigation[i].BackColor=Brand.Paper;Navigation[i].ForeColor=i==index?Brand.Ink:Brand.Muted;Navigation[i].Invalidate();}
@@ -393,6 +410,7 @@ internal sealed class MainWindow : Form {
         try {
             Preferences next=new Preferences {Interval=(int)Seconds.Value,AfterChanges=ChangesRadio.Checked,Word=Word.Checked,Excel=Excel.Checked,PowerPoint=PowerPoint.Checked,Photoshop=Photoshop.Checked,Illustrator=Illustrator.Checked,LimitFolder=Limit.Checked,Folder=Folder.Text};
             next.WordInterval=AppSeconds[0];next.ExcelInterval=AppSeconds[1];next.PowerPointInterval=AppSeconds[2];next.PhotoshopInterval=AppSeconds[3];next.IllustratorInterval=AppSeconds[4];
+            next.CheckForUpdates=UpdateEnabled;next.IncludePreviewUpdates=PreviewUpdates;next.LastUpdateCheckUtc=Settings.LastUpdateCheckUtc;next.LastNotifiedVersion=Settings.LastNotifiedVersion;
             next.SaveHealthWarnings=WarningEnabled;next.HealthWarningSeconds=WarningSeconds;
             next.Validate();Store.Save(next);Settings=next;Worker.Update(next);ApplyLabels();RefreshStatus();
             try {Store.Startup(Startup.Checked,Application.ExecutablePath);} catch(Exception ex) {Note.Text="Save settings applied; startup update failed.";MessageBox.Show(this,ex.Message,"Startup could not be updated",MessageBoxButtons.OK,MessageBoxIcon.Warning);return;}
@@ -420,7 +438,7 @@ internal sealed class MainWindow : Form {
             if(health.Notify.Count>0) {
                 string apps=String.Join(", ",health.Notify);
                 Store.Log(apps+": save-health warning; detected changes remain unconfirmed.");
-                Tray.ShowBalloonTip(10000,"LocalSave - saving needs attention",apps+": detected changes remain unsaved. Finish edits/dialogs or save manually. Open LocalSave for status.",ToolTipIcon.Warning);
+                UpdateNotice=false;Tray.ShowBalloonTip(10000,"LocalSave - saving needs attention",apps+": detected changes remain unsaved. Finish edits/dialogs or save manually. Open LocalSave for status.",ToolTipIcon.Warning);
             }
         }
     }
@@ -447,7 +465,7 @@ internal sealed class MainWindow : Form {
     void Uninstall() {
         if(Preview) return;
         if(MessageBox.Show(this,"Reset LocalSave's startup entry, preferences and activity logs?\r\nYour documents and the installed app will remain. Use Windows Settings to uninstall the app.","Reset preferences",MessageBoxButtons.OKCancel,MessageBoxIcon.Question)!=DialogResult.OK) return;
-        Worker.Stop();Enabled=false;
+        Resetting=true;if(UpdateTimer!=null) UpdateTimer.Stop();Worker.Stop();Enabled=false;
         UninstallTimer=new System.Windows.Forms.Timer {Interval=250};int ticks=0;
         UninstallTimer.Tick+=delegate {
             ticks++;
@@ -458,10 +476,40 @@ internal sealed class MainWindow : Form {
         };
         UninstallTimer.Start();
     }
+    void OpenUpdate() {
+        if(AvailableUpdateUrl==null) return;
+        try {Process.Start(new ProcessStartInfo(AvailableUpdateUrl) {UseShellExecute=true});}
+        catch {MessageBox.Show(this,"Open github.com/plashsma/localsave/releases in your browser.","Download update");}
+    }
+    void CheckUpdate(bool manual) {
+        if(Preview || Quitting || Resetting || CheckingUpdate || (!manual && (!Settings.CheckForUpdates || !Updates.Due(Settings.LastUpdateCheckUtc,DateTime.UtcNow)))) return;
+        CheckingUpdate=true;bool previews=Settings.IncludePreviewUpdates;
+        ThreadPool.QueueUserWorkItem(delegate {
+            UpdateRelease release=null;bool failed=false;
+            try {release=Updates.Check(Assembly.GetExecutingAssembly().GetName().Version,previews);} catch {failed=true;}
+            if(Quitting || Resetting || IsDisposed || Disposing || !IsHandleCreated) return;
+            try {BeginInvoke((Action)delegate {
+                CheckingUpdate=false;if(Quitting || Resetting || IsDisposed) return;
+                Settings.LastUpdateCheckUtc=DateTime.UtcNow.ToString("o");
+                if(previews!=Settings.IncludePreviewUpdates) {release=null;failed=true;}
+                if(!failed) AvailableUpdateUrl=release==null?null:release.Url;
+                if(manual) {
+                    if(failed) MessageBox.Show(this,"Could not check GitHub. Saving continues normally. Try again when connected.","Update check");
+                    else if(release==null) MessageBox.Show(this,"No newer release is available in your selected channel.","LocalSave is up to date");
+                    else if(MessageBox.Show(this,"LocalSave "+release.Version+" is available. Open the release page? Exit LocalSave before running Setup. Your preferences will stay.","Update available",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes) OpenUpdate();
+                } else if(!failed && release!=null && Settings.LastNotifiedVersion!=release.Version.ToString() && Settings.CheckForUpdates && Tray!=null && !Object.ReferenceEquals(Tray.Icon,WarningTrayIcon)) {
+                    UpdateNotice=true;Settings.LastNotifiedVersion=release.Version.ToString();
+                    Tray.ShowBalloonTip(10000,"LocalSave update available","Version "+release.Version+" is ready. Click to open the official release page. No automatic installation.",ToolTipIcon.Info);
+                }
+                try {Store.Save(Settings);} catch {Store.Log("Update check preference could not be saved.");}
+            });} catch(InvalidOperationException) {}
+        });
+    }
     void ExitApp() {if(Preview || Quitting) return;Quitting=true;if(Worker!=null) Worker.Stop();Close();}
     protected override void Dispose(bool disposing) {
         if(disposing) {
             Quitting=true;
+            System.Windows.Forms.Timer updateTimer=UpdateTimer;UpdateTimer=null;if(updateTimer!=null) {updateTimer.Stop();updateTimer.Dispose();}
             System.Windows.Forms.Timer healthTimer=HealthTimer;HealthTimer=null;if(healthTimer!=null) {healthTimer.Stop();healthTimer.Dispose();}
             SaveCoordinator worker=Worker;Worker=null;
             if(worker!=null) {worker.Changed-=OnProgress;worker.Stop();}
@@ -478,3 +526,9 @@ internal sealed class MainWindow : Form {
         base.Dispose(disposing);
     }
 }
+
+
+
+
+
+

@@ -1,7 +1,7 @@
-# Install LocalSave 2.7.0
+# Install LocalSave 2.8.0
 
 1. Exit an older LocalSave using its tray menu.
-2. Run **LocalSave-Setup-2.7.0.exe**.
+2. Run **LocalSave-Setup-2.8.0.exe**.
 3. Accept the LocalSave Personal Use License and choose the installation folder.
 4. Optionally choose a desktop shortcut. Start menu shortcuts are included.
 5. Setup checks for .NET Framework 4.8 or newer. If missing, installation stops
@@ -40,9 +40,9 @@ before uninstalling.
   It contains no .NET runtime or device drivers.
 - The LocalSave app and Setup EXE are unsigned previews. Bundling Microsoft's
   signed runtime does not give LocalSave a publisher signature.
-- 109 application checks, 22 UI checks and 10 isolated installer checks passed.
+- 121 application checks, 23 UI checks and 10 isolated installer checks passed.
   Tests installed, upgraded and uninstalled using a separate test-only identity
-  and mutex. Tests include a 2.6.0-to-2.7.0 upgrade without uninstalling and a
+  and mutex. Tests include a 2.6.0-to-2.8.0 upgrade without uninstalling and a
   simulated missing-runtime check. Live Office/Adobe testing remains pending.
 
 ## Build the installer
@@ -55,9 +55,14 @@ before compiling the small installer; no runtime download is needed:
 ```
 
 The setup script is `installer/LocalSave.iss`. The output is
-`dist/LocalSave-Setup-2.7.0.exe` with a SHA-256 file. New material uses the LocalSave Personal Use License. Earlier MIT permissions remain. The compiler
+`dist/LocalSave-Setup-2.8.0.exe` with a SHA-256 file. New material uses the LocalSave Personal Use License. Earlier MIT permissions remain. The compiler
 is a build tool and is not installed on end-user devices.
 
 References: [Inno Setup](https://jrsoftware.org/isdl.php),
 [Microsoft offline runtime](https://support.microsoft.com/en-us/servicing/dotnetframework/2019/10/microsoft-net-framework-4-8-offline-installer-for-windows),
 [Microsoft runtime deployment](https://learn.microsoft.com/en-us/dotnet/framework/deployment/deployment-guide-for-developers).
+
+## Updates and signing
+
+See [Update notifications](UPDATES.md) for startup checks and privacy, and [Signing](SIGNING.md) for the optional trusted-certificate build. The prepared 2.8.0 installer is unsigned; no certificate is bundled.
+

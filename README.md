@@ -4,7 +4,9 @@
 
 **Local automatic saving for desktop Office, Photoshop and Illustrator.**
 
-**LocalSave 2.7.0 preview** includes a compact Windows installer (about 2.05 MB),
+**LocalSave 2.8.0 preview** adds update notifications after launch and trusted-publisher signing support. The prepared installer remains unsigned until a certificate is supplied. See [Update notifications](docs/UPDATES.md) and [Signing](docs/SIGNING.md).
+
+The compact Windows installer (about 2.05 MB) supports
 in-place updates, and preferences stored in AppData. No OneDrive account is
 required. The installer checks for .NET Framework 4.8+ without bundling it.
 
@@ -13,15 +15,16 @@ independent saving workers, and save-health warnings with an amber tray icon.
 Choose intervals from 1 second or check for changes about every 250 ms.
 Photoshop and Illustrator support is opt-in; live Adobe saving remains unverified.
 
-**[Download v2.7.0 preview](https://github.com/plashsma/localsave/releases/tag/v2.7.0)**
+**[Download v2.8.0 preview](https://github.com/plashsma/localsave/releases/tag/v2.8.0)**
 · **[Step-by-step user guide](docs/USER_GUIDE.md)**
 · **[Install, update and uninstall](docs/INSTALLATION.md)**
 · **[Troubleshooting](docs/TROUBLESHOOTING.md)**
+
 ![LocalSave interface](assets/overview.png)
 
 ## Get started
 
-1. Download **LocalSave-Setup-2.7.0.exe** from the release's **Assets** section.
+1. Download **LocalSave-Setup-2.8.0.exe** from the release's **Assets** section.
 2. Run Setup, read the personal-use terms, and complete installation.
 3. Save each new Office file manually once to choose its name and location.
 4. In **Save settings**, select your apps and saving mode, then **Apply settings**.
@@ -31,6 +34,7 @@ Closing the window hides it to the tray. Use **Exit** from the tray menu to stop
 saving. To upgrade, exit LocalSave and run newer Setup; applied preferences stay
 in AppData. Remove the program through **Windows Settings → Apps**. The in-app
 **Reset preferences** action clears settings and known logs separately.
+
 ## Features
 
 | Feature | Behavior |
@@ -45,7 +49,7 @@ in AppData. Remove the program through **Windows Settings → Apps**. The in-app
 | Folder restriction | Limit saves to a local folder and its subfolders |
 | Excel discovery | Checks registered instances and Excel's desktop windows |
 | Manual controls | Pause/resume, save now, activity viewer and tray menu |
-| Local privacy | No networking, telemetry or keyboard recording in the helper |
+| Local privacy | Optional GitHub update checks; no telemetry, document uploads or keyboard recording |
 
 ## Requirements and limits
 
@@ -64,7 +68,7 @@ in AppData. Remove the program through **Windows Settings → Apps**. The in-app
 
 ## Preview release status
 
-Version **2.7.0 is a preview**. **109 behavior/settings checks, 22 UI checks,
+Version **2.8.0 is a preview**. **121 behavior/settings checks, 23 UI checks,
 and 10 isolated installer checks** passed locally. Automated app checks use test
 doubles where desktop apps are required. Live Office/Adobe acceptance testing
 remains pending; test disposable files before relying on the utility.
@@ -94,4 +98,6 @@ This is source-available software with use restrictions, not an open-source
 license. Earlier MIT-licensed copies and material retain their MIT permissions;
 see [the preserved MIT notice](licenses/MIT-PREVIOUS.txt). The public 2.2.0
 [MIT release](https://github.com/plashsma/localsave/releases/tag/v2.2.0) is not retroactively restricted. Copyright (c) 2026 PLASHSMA.
+
+
 

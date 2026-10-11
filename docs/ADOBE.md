@@ -7,7 +7,7 @@ itself. Adobe's own activation requirements still apply.
 
 ## Enable and verify
 
-1. Exit the previous LocalSave from its tray menu, then run LocalSave 2.7.0.
+1. Exit the previous LocalSave from its tray menu, then run LocalSave 2.8.0.
 2. Open Photoshop or Illustrator normally, at the same privilege level.
 3. Create a disposable test project and save it locally first: **PSD or PSB**
    for Photoshop, **AI** for Illustrator.
@@ -42,7 +42,7 @@ itself. Adobe's own activation requirements still apply.
 
 ## Validation status
 
-The 2.7.0 preview passed 109 behavior/settings checks and 22 UI checks. Adobe tests use
+The 2.8.0 preview passed 121 behavior/settings checks and 23 UI checks. Adobe tests use
 test doubles with Adobe-style properties, including busy errors, save
 confirmation, opt-in migration, format exclusions and read-only handling.
 The layout was rendered and reviewed. Live saving has not yet been verified in
@@ -51,3 +51,4 @@ Photoshop or Illustrator, so compatibility remains provisional.
 Automation references:
 [Adobe Photoshop scripting](https://helpx.adobe.com/photoshop/using/scripting.html)
 and [Adobe Illustrator scripting](https://helpx.adobe.com/illustrator/desktop/automate-visualize-data/automate-actions/install-and-run-scripts.html).
+

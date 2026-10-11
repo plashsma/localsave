@@ -2,8 +2,8 @@
 
 ## 1. Download and install
 
-1. Open [the v2.7.0 release](https://github.com/plashsma/localsave/releases/tag/v2.7.0).
-2. Expand **Assets** and download **LocalSave-Setup-2.7.0.exe**. Source ZIPs are for developers.
+1. Open [the v2.8.0 release](https://github.com/plashsma/localsave/releases/tag/v2.8.0).
+2. Expand **Assets** and download **LocalSave-Setup-2.8.0.exe**. Source ZIPs are for developers.
 3. Run Setup, read the personal-use license, and complete installation.
 4. Launch LocalSave from the Start menu as your normal Windows user.
 5. If .NET Framework 4.8+ is missing, Setup offers the official Microsoft page;
@@ -14,10 +14,10 @@ The release includes a SHA-256 checksum for detecting an unexpected file change.
 It does not replace a publisher signature. To compare the downloaded EXE:
 
 ```powershell
-Get-FileHash -LiteralPath .\LocalSave-Setup-2.7.0.exe -Algorithm SHA256
+Get-FileHash -LiteralPath .\LocalSave-Setup-2.8.0.exe -Algorithm SHA256
 ```
 
-Compare the result to `LocalSave-Setup-2.7.0.sha256` in the same release.
+Compare the result to `LocalSave-Setup-2.8.0.sha256` in the same release.
 
 ## 2. Prepare your documents
 
@@ -166,6 +166,12 @@ EXE does not remove these preferences. **Reset preferences** deliberately clears
 them. Each Windows user has separate settings; another PC starts with defaults.
 New logs contain timestamps with timezone offsets, app names, counts, states,
 operations and error codes; document names and contents are omitted.
-The helper makes no network requests. Office can still sync files through its
+Starting in 2.8.0, optional update checks contact GitHub; see [Update notifications](UPDATES.md). No documents or preferences are sent. Office can still sync files through its
 own enabled services and can run existing document save-event handlers.
+
+
+## Update notices (2.8.0)
+
+Choose **Save settings → Updates...**, then apply. With Windows startup enabled, checks begin 60 seconds after sign-in and occur at most daily. You choose whether to download and install. See [Update notifications](UPDATES.md).
+
 

@@ -32,8 +32,8 @@ require installed desktop Office and an interactive user session.
    behavior tests and UI interaction/rendering tests, and writes:
 
    ```text
-   dist/LocalSave-2.7.0.exe
-   dist/LocalSave-2.7.0.sha256
+   dist/LocalSave-2.8.0.exe
+   dist/LocalSave-2.8.0.sha256
    ```
 
 4. Optional output directory/name:
@@ -59,7 +59,7 @@ docs/        User, troubleshooting, build and publishing guides
 
 ## Validation limits
 
-Version 2.7.0 passed **109 behavior/settings checks and 22 UI checks** locally.
+Version 2.8.0 passed **121 behavior/settings checks and 23 UI checks** locally.
 Office-dependent tests use supplied test objects; they are not a live Office
 certification. Junction integration checks are skipped when no test junction is
 available. A complete live Office save test was not possible in the development
@@ -75,3 +75,6 @@ The checksum identifies the actual EXE attached to each release.
 Adobe tests use test doubles. Follow [Adobe live verification](ADOBE.md) on
 disposable PSD/PSB and AI projects; live Photoshop/Illustrator saving remains
 unverified in this preview.
+
+For a trusted signed release, see [Signing](SIGNING.md). No signing identity is bundled.
+

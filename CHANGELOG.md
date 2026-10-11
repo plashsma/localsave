@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.8.0 preview
+
+- Background GitHub update checks after launch, daily throttling, preview-channel selection and manual checks.
+- Persistent update choices and once-per-version tray notices; no automatic installation.
+- Trusted-certificate signing support for app, Setup and uninstaller with timestamps; current preview remains unsigned.
+
+
 ## 2.7.0 — Personal-use licensing
 
 - Introduce a custom Personal Use License for new material, free for individuals'
@@ -131,3 +138,5 @@
 - Portable script, then single EXE with pause, startup and uninstall.
 - Added a 1-second minimum interval and 250 ms change-check mode.
 - Corrected Word collection access to support both `Item` methods and properties.
+
+

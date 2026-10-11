@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "2.7.0"
+  #define AppVersion "2.8.0"
 #endif
 
 [Setup]
@@ -36,6 +36,10 @@ CloseApplications=no
 RestartApplications=no
 SetupLogging=yes
 VersionInfoVersion={#AppVersion}.0
+#ifdef SignBuild
+SignTool=LocalSaveSign
+SignedUninstaller=yes
+#endif
 
 [Tasks]
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
@@ -99,3 +103,4 @@ begin
   end;
 #endif
 end;
+

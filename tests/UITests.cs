@@ -83,6 +83,7 @@ internal static class UITests {
             ToolStripMenuItem exitItem=(ToolStripMenuItem)tray.ContextMenuStrip.Items[tray.ContextMenuStrip.Items.Count-1];
             exitItem.PerformClick();
             Assert(trayWindow.IsDisposed,"tray Exit closes a hidden window");
+            Assert(typeof(MainWindow).GetField("UpdateTimer",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(trayWindow)==null,"tray Exit disposes the update timer safely");
             trayWindow.Dispose();
             Assert(trayWindow.IsDisposed,"tray Exit followed by using-block cleanup succeeds");
             Assert(typeof(MainWindow).GetField("WarningTrayIcon",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(trayWindow)==null,"warning icon is released safely during repeated exit cleanup");
@@ -90,3 +91,4 @@ internal static class UITests {
         Console.WriteLine("All "+Count+" UI checks passed.");return 0;
     }
 }
+

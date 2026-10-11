@@ -52,18 +52,18 @@ copy in the prepared files, commit and push. Do not force-push over remote work.
 4. Generate the checksum after the final build (and after signing, if signed):
 
    ```powershell
-   $hash = Get-FileHash -LiteralPath .\dist\LocalSave-Setup-2.7.0.exe -Algorithm SHA256
-   ($hash.Hash.ToLower() + '  LocalSave-Setup-2.7.0.exe') |
-       Set-Content -LiteralPath .\dist\LocalSave-Setup-2.7.0.sha256 -Encoding ascii
+   $hash = Get-FileHash -LiteralPath .\dist\LocalSave-Setup-2.8.0.exe -Algorithm SHA256
+   ($hash.Hash.ToLower() + '  LocalSave-Setup-2.8.0.exe') |
+       Set-Content -LiteralPath .\dist\LocalSave-Setup-2.8.0.sha256 -Encoding ascii
    ```
 
 ## 5. Create the GitHub release
 
 1. Open the repository's **Releases** page and choose **Draft a new release**.
-2. Create tag **v2.7.0** from the reviewed source commit on `main`.
-3. Title it **LocalSave 2.7.0 — Preview**.
+2. Create tag **v2.8.0** from the reviewed source commit on `main`.
+3. Title it **LocalSave 2.8.0 — Preview**.
 4. Paste the release notes from [RELEASE_NOTES.md](../RELEASE_NOTES.md).
-5. Attach **LocalSave-Setup-2.7.0.exe**, its checksum, and **LICENSE.txt** containing
+5. Attach **LocalSave-Setup-2.8.0.exe**, its checksum, and **LICENSE.txt** containing
    the complete Personal Use License, prior MIT notice and copyright notice.
 6. Mark it as a **pre-release** while live Excel verification and publisher signing
    remain incomplete, then publish.
@@ -84,4 +84,5 @@ Publishing to GitHub does not sign an EXE. Obtain trusted publisher signing,
 timestamp final binaries, and keep the publisher identity consistent. Even signed
 releases can lack SmartScreen reputation. A checksum detects a file change but
 does not establish publisher identity. See [SECURITY.md](../SECURITY.md).
+
 

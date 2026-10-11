@@ -15,6 +15,10 @@ using Microsoft.Win32;
         int[] values={WordInterval,ExcelInterval,PowerPointInterval,PhotoshopInterval,IllustratorInterval};
         return values[index]==0?Interval:values[index];
     }
+    public bool CheckForUpdates = true;
+    public bool IncludePreviewUpdates = true;
+    public string LastUpdateCheckUtc = "";
+    public string LastNotifiedVersion = "";
     public bool AfterChanges;
     public bool SaveHealthWarnings = true;
     public int HealthWarningSeconds = 120;
@@ -397,3 +401,4 @@ internal sealed class SaveCoordinator {
     internal bool IsBusy {get {foreach(SaveWorker worker in Workers) if(worker.IsBusy) return true;return false;}}
     internal bool IsStopped {get {foreach(SaveWorker worker in Workers) if(!worker.IsStopped) return false;return true;}}
 }
+

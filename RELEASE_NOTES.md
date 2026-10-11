@@ -1,22 +1,16 @@
-# LocalSave 2.7.0 — Personal-use preview
+# LocalSave 2.8.0 — Update notifications preview
 
-Free for individuals' personal, noncommercial use under the custom LocalSave
-Personal Use License 1.0. Company and organizational use, employment duties,
-paid client/freelance work and other commercial use are excluded under the new
-grant. Personal coursework is permitted; institutional deployment is not.
+- Checks public GitHub releases 60 seconds after launch; with Windows startup enabled, this happens after sign-in.
+- Automatic checks are daily; preview releases can be excluded, and checks can be disabled in Save settings → Updates....
+- One update notice per version; manual checks are available in the tray and Privacy & help.
+- Opens the official release page only on user action. No automatic download or installation.
+- Trusted-certificate build support signs the app, installer and uninstaller with SHA-256 and RFC3161 timestamps, verifies signatures, and writes final checksums.
 
-Previously MIT-licensed copies and material keep their MIT permissions. This
-change does not revoke those rights. The preserved MIT notice accompanies the
-new terms. Source is available, but the restricted license is not an open-source
-license. The custom terms have not undergone legal review.
+**This preview is unsigned:** no trusted certificate has been supplied. Signing support is prepared, not a Windows-warning bypass. Signing end-to-end cannot be verified until a trusted identity is available.
 
-Run LocalSave-Setup-2.7.0.exe. The installer remains compact with no bundled .NET;
-.NET Framework 4.8+ is checked before installation. Updates work without first
-uninstalling and preserve AppData preferences. Read the terms in Setup or in
-Privacy & help > Personal-use license. Created by PLASHSMA.
+121 behavior/settings checks, 23 UI checks, 10 isolated installer checks and the required-signing guard passed. Live HTTPS release discovery passed. Live Office/Adobe acceptance testing remains pending.
 
-109 app checks, 22 UI checks and 10 isolated installer checks passed. Live
-Office/Adobe acceptance testing remains pending. This preview is unsigned.
-See [Licensing](https://github.com/plashsma/localsave/blob/main/docs/LICENSING.md) and [Installation](https://github.com/plashsma/localsave/blob/main/docs/INSTALLATION.md).
+Update checks send ordinary request metadata to GitHub, never documents or preferences. See [Update notifications](https://github.com/plashsma/localsave/blob/main/docs/UPDATES.md) and [Signing](https://github.com/plashsma/localsave/blob/main/docs/SIGNING.md). The personal-use terms and preserved prior MIT permissions continue to apply.
+
 
 

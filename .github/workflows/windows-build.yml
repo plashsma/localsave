@@ -24,6 +24,7 @@ jobs:
         with:
           name: LocalSave-windows-preview
           path: |
-            dist/LocalSave-2.7.0.exe
-            dist/LocalSave-2.7.0.sha256
+            dist/LocalSave-2.8.0.exe
+            dist/LocalSave-2.8.0.sha256
           if-no-files-found: error
+

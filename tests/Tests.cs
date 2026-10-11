@@ -236,6 +236,22 @@ internal static class Tests {
         IndependentWorkers(root,psd,ai);
         HealthWarnings(root,psd);
         UpgradePreferences(root);
+                DateTime updateNow=new DateTime(2026,10,11,0,0,0,DateTimeKind.Utc);
+        Assert(Updates.Due("",updateNow),"first launch checks for updates");
+        Assert(!Updates.Due(updateNow.AddHours(-2).ToString("o"),updateNow),"daily update checks suppress repeated boots");
+        Assert(Updates.Due(updateNow.AddDays(-1).ToString("o"),updateNow),"update check due after 24 hours");
+        Assert(Updates.Due(updateNow.AddDays(1).ToString("o"),updateNow),"future cache date does not disable updates forever");
+        string releases="[{\"tag_name\":\"v2.9.0\",\"html_url\":\"https://github.com/plashsma/localsave/releases/tag/v2.9.0\",\"draft\":false,\"prerelease\":true},{\"tag_name\":\"v2.8.1\",\"html_url\":\"https://github.com/plashsma/localsave/releases/tag/v2.8.1\",\"draft\":false,\"prerelease\":false}]";
+        Assert(Updates.Parse(releases,new Version(2,8,0,0),true).Version==new Version(2,9,0),"preview channel selects newest version");
+        Assert(Updates.Parse(releases,new Version(2,8,0,0),false).Version==new Version(2,8,1),"stable channel excludes previews");
+        Assert(Updates.Parse(releases,new Version(2,9,0,0),true)==null,"equal and older versions never notify");
+        Assert(Updates.Parse(releases.Replace("https://github.com/plashsma/localsave/releases/tag/","https://evil.example/"),new Version(2,8,0),true)==null,"update URLs outside official release pages rejected");
+        Assert(Updates.Parse(releases.Replace("\"draft\":false","\"draft\":true"),new Version(2,8,0),true)==null,"draft releases never notify");
+        Reject(delegate {Updates.Parse(new string('x',524289),new Version(2,8,0),true);},"oversized update response rejected");
+        Reject(delegate {Updates.Parse("{}",new Version(2,8,0),true);},"unexpected update response rejected");
+        p=new Preferences {CheckForUpdates=false,IncludePreviewUpdates=false,LastUpdateCheckUtc=updateNow.ToString("o"),LastNotifiedVersion="2.9.0"};Store.Save(p);loaded=Store.Load();
+        Assert(!loaded.CheckForUpdates && !loaded.IncludePreviewUpdates && loaded.LastNotifiedVersion=="2.9.0" && loaded.LastUpdateCheckUtc==p.LastUpdateCheckUtc,"update choices and notification cache persist across upgrades");
         Console.WriteLine("All "+Count+" tests passed.");return 0;
     }
 }
+

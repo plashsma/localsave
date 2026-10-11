@@ -1,12 +1,12 @@
 # Security and privacy
 
-LocalSave 2.2 is an **unsigned preview**. It is not security-certified, and its
+LocalSave 2.8.0 is an **unsigned preview**. It is not security-certified, and its
 publication on GitHub is not a guarantee of safety or Windows reputation.
 
 ## Implemented measures
 
 - Normal-user execution (`asInvoker`), without requesting administrator rights.
-- No telemetry, document uploads, networking code or keyboard hooks in the helper.
+- No telemetry, document uploads or keyboard hooks. Optional update checks use the public GitHub API with normal TLS verification; see [Update privacy](docs/UPDATES.md).
 - Explicit per-user startup and optional folder restriction.
 - Rejection of nonlocal and redirected paths for document saves and app storage.
 - Bounded, validated XML settings with DTDs/external entities disabled.
@@ -34,3 +34,6 @@ steps. Do not include private Office files, credentials or personal data.
 For a sensitive vulnerability, use GitHub's private vulnerability reporting
 option if the maintainer has enabled it. This repository does not invent an
 unverified security contact or promise private reporting is already enabled.
+
+The [signing build](docs/SIGNING.md) supports trusted certificates and timestamps. Current artifacts remain unsigned until a trusted identity is supplied.
+
