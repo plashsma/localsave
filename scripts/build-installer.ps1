@@ -26,7 +26,7 @@ if ($signing) {
 }
 & (Join-Path $PSScriptRoot 'build.ps1')
 if ($LASTEXITCODE -ne 0) {throw 'Application build failed.'}
-$app=Join-Path $repoRoot 'dist\LocalSave-2.8.0.exe'
+$app=Join-Path $repoRoot 'dist\LocalSave-2.8.1.exe'
 $compilerArgs=@()
 if($signing) {
     $signArgs=@('sign','/sha1',$CertificateThumbprint,'/s','My','/fd','SHA256','/tr',$TimestampUrl,'/td','SHA256')
@@ -41,7 +41,7 @@ if($signing) {
 }
 & $CompilerPath @compilerArgs (Join-Path $repoRoot 'installer\LocalSave.iss')
 if ($LASTEXITCODE -ne 0) {throw 'Installer compilation failed.'}
-$setup=Join-Path $repoRoot 'dist\LocalSave-Setup-2.8.0.exe'
+$setup=Join-Path $repoRoot 'dist\LocalSave-Setup-2.8.1.exe'
 if($signing) {
     & $SignToolPath verify /pa /all /tw $setup
     if($LASTEXITCODE -ne 0){throw 'Installer signature verification failed.'}

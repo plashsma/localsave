@@ -13,16 +13,20 @@ Follow these steps in order:
 6. Click **Save now** and inspect the Excel row in **Overview**.
 7. Open **Activity log** and copy the latest Excel status/error when reporting a bug.
 
-Version 2.2 tries both the registered Excel application and the native object model
-of Excel's desktop windows. This improves detection of multiple instances but
-does not bypass process security or guarantee access to every instance.
+LocalSave checks the registered Office app and the document windows for Word,
+Excel and PowerPoint. If the app is running and access is pending, close any
+modal dialog and give LocalSave another scan. Run both apps as the same normal
+Windows user. A document in Protected View may stay unavailable.
 
 ## Understand the status
 
 | Status or reason | Meaning / next step |
 | --- | --- |
-| Not running or not available | The helper could not connect to the app |
-| No open documents | The connected instance has no documents in its normal collection |
+| Not running | LocalSave found no app process or Office window in this session |
+| Running; waiting for access | The app is running, but its automation is temporarily unavailable |
+| Document access pending | An Office editor is visible to LocalSave, but its document is unavailable |
+| Some windows are unavailable | LocalSave can scan accessible instances and will retry the other windows |
+| No open documents | The connected app reports no documents, and LocalSave found no Office editor |
 | Save new file once first | Choose a name and location with a manual save |
 | Read-only file | Save a writable copy manually |
 | Outside selected folder | Change the folder restriction or move the document yourself |

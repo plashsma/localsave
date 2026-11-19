@@ -18,7 +18,7 @@ function Install {
 }
 $installed=$false
 try {
-    $initialVersion=if($PreviousSetupPath) {'2.6.0'} else {'2.8.0'}
+    $initialVersion=if($PreviousSetupPath) {'2.6.0'} else {'2.8.1'}
     if($PreviousSetupPath) {Install $PreviousSetupPath} else {Install}; $installed=$true
     $exe=Join-Path $installDir 'LocalSave.exe';$uninstaller=Join-Path $installDir 'unins000.exe'
     Check ((Test-Path -LiteralPath $exe) -and (Test-Path -LiteralPath $uninstaller)) 'installs app and standard uninstaller'
@@ -27,7 +27,7 @@ try {
     $sentinel=Join-Path $installDir 'user-file.txt';[IO.File]::WriteAllText($sentinel,'preserve on update and uninstall')
     Install $SetupPath $true
     Check ([IO.File]::ReadAllText($sentinel) -eq 'preserve on update and uninstall') 'upgrade preserves unknown user files'
-    Check ((Get-ItemProperty -LiteralPath $registryPath).DisplayVersion -eq '2.8.0' -and (Get-FileHash -LiteralPath $exe).Hash -eq (Get-FileHash -LiteralPath (Join-Path $repoRoot 'dist\LocalSave-2.8.0.exe')).Hash) 'new setup upgrades in place without uninstalling and reuses the previous folder'
+    Check ((Get-ItemProperty -LiteralPath $registryPath).DisplayVersion -eq '2.8.1' -and (Get-FileHash -LiteralPath $exe).Hash -eq (Get-FileHash -LiteralPath (Join-Path $repoRoot 'dist\LocalSave-2.8.1.exe')).Hash) 'new setup upgrades in place without uninstalling and reuses the previous folder'
     $terms=[IO.File]::ReadAllText((Join-Path $installDir 'LICENSE.txt'))
     Check ($terms.Contains('LocalSave Personal Use License 1.0') -and $terms.Contains('Prior MIT notice') -and $terms.Contains('Permission is hereby granted')) 'installed license includes personal restrictions and preserves prior MIT notice'
     $process=Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -WindowStyle Hidden -Wait -PassThru

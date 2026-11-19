@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = '', [string]$OutputName = 'LocalSave-2.8.0.exe')
+param([string]$OutputDirectory = '', [string]$OutputName = 'LocalSave-2.8.1.exe')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $source = Join-Path $repoRoot 'src'
@@ -13,7 +13,7 @@ if (-not (Test-Path -LiteralPath $compiler)) { throw 'The .NET Framework C# comp
 New-Item -ItemType Directory -Force -Path $artifacts,$output | Out-Null
 $brand = Join-Path $source 'Brand.cs'
 $core = Join-Path $source 'Core.cs'
-$excel = Join-Path $source 'ExcelConnection.cs'
+$connection = Join-Path $source 'AppConnection.cs'
 $updates = Join-Path $source 'Updates.cs'
 $desktop = Join-Path $source 'Desktop.cs'
 $iconGenerator = Join-Path $artifacts 'MakeIcon.exe'
@@ -22,15 +22,15 @@ $icon = Join-Path $artifacts 'LocalSave.ico'
 if ($LASTEXITCODE -ne 0) { throw 'Icon generator compilation failed.' }
 & $iconGenerator $icon
 if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed.' }
-& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Accessibility.dll "/resource:$repoRoot\LICENSE,LocalSave.LICENSE" "/win32manifest:$source\app.manifest" "/win32icon:$icon" "/out:$output\$OutputName" $brand $core $excel $updates $desktop
+& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Accessibility.dll "/resource:$repoRoot\LICENSE,LocalSave.LICENSE" "/win32manifest:$source\app.manifest" "/win32icon:$icon" "/out:$output\$OutputName" $brand $core $connection $updates $desktop
 if ($LASTEXITCODE -ne 0) { throw 'Application compilation failed.' }
 $behaviorTests = Join-Path $artifacts 'Tests.exe'
-& $compiler /nologo /target:exe /main:Tests /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "/out:$behaviorTests" $brand $core $excel $updates (Join-Path $tests 'Tests.cs')
+& $compiler /nologo /target:exe /main:Tests /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "/out:$behaviorTests" $brand $core $connection $updates (Join-Path $tests 'Tests.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Behavior test compilation failed.' }
 & $behaviorTests (Join-Path $artifacts 'test-data')
 if ($LASTEXITCODE -ne 0) { throw 'Behavior tests failed.' }
 $uiTests = Join-Path $artifacts 'UITests.exe'
-& $compiler /nologo /target:exe /main:UITests /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Accessibility.dll "/out:$uiTests" $brand $core $excel $updates $desktop (Join-Path $tests 'UITests.cs')
+& $compiler /nologo /target:exe /main:UITests /reference:System.Web.Extensions.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:Accessibility.dll "/out:$uiTests" $brand $core $connection $updates $desktop (Join-Path $tests 'UITests.cs')
 if ($LASTEXITCODE -ne 0) { throw 'UI test compilation failed.' }
 & $uiTests
 if ($LASTEXITCODE -ne 0) { throw 'UI tests failed.' }

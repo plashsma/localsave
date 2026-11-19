@@ -15,7 +15,7 @@ independent saving workers, and save-health warnings with an amber tray icon.
 Choose intervals from 1 second or check for changes about every 250 ms.
 Photoshop and Illustrator support is opt-in; live Adobe saving remains unverified.
 
-**[Download v2.8.0 preview](https://github.com/plashsma/localsave/releases/tag/v2.8.0)**
+**[Download v2.8.1 preview](https://github.com/plashsma/localsave/releases/tag/v2.8.1)**
 · **[Step-by-step user guide](docs/USER_GUIDE.md)**
 · **[Install, update and uninstall](docs/INSTALLATION.md)**
 · **[Troubleshooting](docs/TROUBLESHOOTING.md)**
@@ -24,7 +24,7 @@ Photoshop and Illustrator support is opt-in; live Adobe saving remains unverifie
 
 ## Get started
 
-1. Download **LocalSave-Setup-2.8.0.exe** from the release's **Assets** section.
+1. Download **LocalSave-Setup-2.8.1.exe** from the release's **Assets** section.
 2. Run Setup, read the personal-use terms, and complete installation.
 3. Save each new Office file manually once to choose its name and location.
 4. In **Save settings**, select your apps and saving mode, then **Apply settings**.
@@ -47,7 +47,7 @@ in AppData. Remove the program through **Windows Settings → Apps**. The in-app
 | App selection | Choose Word, Excel, PowerPoint, or a combination |
 | Adobe apps | Opt-in native saves for existing local PSD/PSB and AI files |
 | Folder restriction | Limit saves to a local folder and its subfolders |
-| Excel discovery | Checks registered instances and Excel's desktop windows |
+| Office discovery | Checks registered instances and desktop document windows for Word, Excel and PowerPoint in 2.8.1 |
 | Manual controls | Pause/resume, save now, activity viewer and tray menu |
 | Local privacy | Optional GitHub update checks; no telemetry, document uploads or keyboard recording |
 
@@ -59,8 +59,8 @@ in AppData. Remove the program through **Windows Settings → Apps**. The in-app
   paths, Excel add-ins, and files already using native Office AutoSave are skipped.
 - Excel cell edits must be committed with **Enter**, **Tab**, or by leaving the
   cell. This app cannot save every keystroke inside an uncommitted cell.
-- Excel checks multiple desktop instances. Inaccessible instances may be missed;
-  Word and PowerPoint use one registered instance per app.
+- From 2.8.1, Word, Excel and PowerPoint are discovered through registered apps
+  and native document windows. Some instances can still be inaccessible.
 - Busy Office apps or save dialogs can delay a cycle. One failed file does not
   prevent the helper from attempting other files it can access.
 - This is periodic saving, not Microsoft's cloud AutoSave, collaboration or
@@ -98,6 +98,7 @@ This is source-available software with use restrictions, not an open-source
 license. Earlier MIT-licensed copies and material retain their MIT permissions;
 see [the preserved MIT notice](licenses/MIT-PREVIOUS.txt). The public 2.2.0
 [MIT release](https://github.com/plashsma/localsave/releases/tag/v2.2.0) is not retroactively restricted. Copyright (c) 2026 PLASHSMA.
+
 
 
 

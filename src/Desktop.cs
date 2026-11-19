@@ -12,8 +12,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Local automatic saving for Office, Photoshop and Illustrator")]
 [assembly: AssemblyCompany("PLASHSMA")]
 [assembly: AssemblyCopyright("Created by PLASHSMA")]
-[assembly: AssemblyVersion("2.8.0.0")]
-[assembly: AssemblyFileVersion("2.8.0.0")]
+[assembly: AssemblyVersion("2.8.1.0")]
+[assembly: AssemblyFileVersion("2.8.1.0")]
 
 internal static class Program {
     [STAThread] static int Main(string[] args) {
@@ -277,7 +277,7 @@ internal sealed class MainWindow : Form {
             menu.Items.Add("Exit",null,delegate {ExitApp();});Tray.ContextMenuStrip=menu;Tray.DoubleClick+=delegate {Reveal();};
             Tray.BalloonTipClicked+=delegate {if(UpdateNotice && AvailableUpdateUrl!=null) OpenUpdate();else Reveal();};
             UpdateTimer=new System.Windows.Forms.Timer {Interval=60000};UpdateTimer.Tick+=delegate {CheckUpdate(false);UpdateTimer.Interval=3600000;};
-            Shown+=delegate {Store.Log("LocalSave 2.8.0 started. No document names or contents are logged.");Worker.Start();UpdateTimer.Start();if(Background) Hide();};
+            Shown+=delegate {Store.Log("LocalSave 2.8.1 started. No document names or contents are logged.");Worker.Start();UpdateTimer.Start();if(Background) Hide();};
             FormClosing+=delegate(object sender,FormClosingEventArgs e) {if(!Quitting && e.CloseReason==CloseReason.UserClosing) {e.Cancel=true;Hide();}};
         }
     }
@@ -379,7 +379,7 @@ internal sealed class MainWindow : Form {
         Card help=new Card(32,319,688,197);page.Controls.Add(help);
         LabelAt(help,"HOW TO USE IT",20,15,640,22,8,Brand.Teal,true);
         LabelAt(help,"1. Save each new file once to choose its name and location.\r\n2. Leave LocalSave running; close the window to keep it in the tray.\r\n3. Check Overview for successful saves and any app delays.",20,45,645,79,10,Brand.Ink,false);
-        LabelAt(help,"Adobe support is opt-in: existing local PSD/PSB and AI files only. One registered instance per app (Excel supports multiple). Finish edits and dialogs first. Keep recovery and backups enabled.",20,130,645,61,9,Brand.Muted,false);
+        LabelAt(help,"Adobe support is opt-in: existing local PSD/PSB and AI files only. Office discovery also checks document windows. Finish edits and dialogs first. Keep recovery and backups enabled.",20,130,645,61,9,Brand.Muted,false);
         LabelAt(page,"FREE FOR PERSONAL USE ONLY  /  .NET FRAMEWORK 4.8+",34,534,680,22,8,Brand.Teal,true);
         LabelAt(page,"Install using LocalSave Setup. Remove the app in Windows Settings > Apps > Installed apps. Preferences stay in AppData for reinstalling; Reset preferences clears them. Windows security or organization policy may show warnings or block the app.",34,565,680,73,9,Brand.Muted,false);
         ButtonAt(page,"Reset preferences",32,648,178,false,delegate {Uninstall();});
@@ -395,7 +395,7 @@ internal sealed class MainWindow : Form {
                 }
             }
         };
-        LabelAt(page,"v2.8.0",580,675,160,24,8,Brand.Muted,false);
+        LabelAt(page,"v2.8.1",580,675,160,24,8,Brand.Muted,false);
     }
     internal void SelectPage(int index) {
         for(int i=0;i<3;i++) {Pages[i].Visible=i==index;Navigation[i].Selected=i==index;Navigation[i].BackColor=Brand.Paper;Navigation[i].ForeColor=i==index?Brand.Ink:Brand.Muted;Navigation[i].Invalidate();}

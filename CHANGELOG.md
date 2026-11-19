@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.8.1 preview
+
+- Check Word, Excel and PowerPoint document windows as well as registered Office apps.
+- Distinguish apps that are closed from apps waiting for access, and preserve pending save warnings while Office access is incomplete.
+
 ## 2.8.0 preview
 
 - Background GitHub update checks after launch, daily throttling, preview-channel selection and manual checks.

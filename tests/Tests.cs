@@ -23,6 +23,7 @@ public class FakeWorkbooks {
     public object this[int i] {get {return Documents[i-1];}}
 }
 public class FakeExcel {public FakeWorkbooks Workbooks {get;set;}}
+public class FakeWord {public FakeWorkbooks Documents {get;set;}}
 // Deliberately excludes Office-only Path, ReadOnly and AutoSaveOn properties.
 public class AdobeDocument {
     public string FullName {get;set;}
@@ -46,6 +47,33 @@ internal static class Tests {
     static void Assert(bool result,string name) {if(!result) throw new Exception(name);Count++;Console.WriteLine("PASS "+name);}
     static void Reject(Action action,string name) {bool rejected=false;try {action();}catch {rejected=true;}Assert(rejected,name);}
     static TestDocument Doc(string folder) {return new TestDocument {Path=folder,FullName=System.IO.Path.Combine(folder,"test.docx")};}
+    static void OfficeDiscovery(string root) {
+        Preferences options=new Preferences {Excel=false,PowerPoint=false};
+        TestDocument document=Doc(root);
+        document.CancelSave=true;
+        int round=0;
+        ProgressState latest=null;
+        SaveWorker worker=new SaveWorker(options,appIndex:0,connectionProvider:delegate(int index) {
+            AppConnection connection=new AppConnection {Running=true,EditorFound=round!=4};
+            if(round!=1) connection.Applications.Add(new FakeWord {Documents=new FakeWorkbooks()});
+            if(round==0 || round==3) connection.Applications.Add(new FakeWord {Documents=new FakeWorkbooks(document)});
+            if(round==1 || round==2) connection.Partial=true;
+            return connection;
+        });
+        worker.Changed+=delegate(ProgressState state) {latest=state;};
+        worker.Scan(options,true);
+        DateTime? pending=latest.PendingSince[0];
+        Assert(document.Calls==1 && pending.HasValue,"Word scans a second instance when the first has no documents");
+        round=1;worker.Scan(options,true);
+        Assert(latest.Apps[0].StartsWith("Running; waiting") && latest.PendingSince[0]==pending,"a disconnected Word window stays running and keeps pending changes");
+        round=2;worker.Scan(options,true);
+        Assert(latest.Apps[0].StartsWith("Document access pending") && latest.PendingSince[0]==pending,"an empty instance does not hide an inaccessible document window");
+        document.CancelSave=false;
+        round=3;worker.Scan(options,true);
+        Assert(latest.Saves==1 && !latest.PendingSince[0].HasValue,"Word saves and clears pending status when access returns");
+        round=4;worker.Scan(options,true);
+        Assert(latest.Apps[0]=="No open documents","a connected Word instance without an editor reports no open documents");
+    }
     static void UpgradePreferences(string root) {
         Preferences before=new Preferences {Interval=9,WordInterval=1,ExcelInterval=2,PowerPointInterval=3,PhotoshopInterval=30,IllustratorInterval=15,AfterChanges=true,SaveHealthWarnings=false,HealthWarningSeconds=300,Word=false,Excel=true,PowerPoint=false,Photoshop=true,Illustrator=true,LimitFolder=true,Folder=root};
         Store.Save(before);string xml=File.ReadAllText(Store.SettingsPath);Preferences after=Store.Load();
@@ -236,6 +264,7 @@ internal static class Tests {
         IndependentWorkers(root,psd,ai);
         HealthWarnings(root,psd);
         UpgradePreferences(root);
+        OfficeDiscovery(root);
                 DateTime updateNow=new DateTime(2026,10,11,0,0,0,DateTimeKind.Utc);
         Assert(Updates.Due("",updateNow),"first launch checks for updates");
         Assert(!Updates.Due(updateNow.AddHours(-2).ToString("o"),updateNow),"daily update checks suppress repeated boots");

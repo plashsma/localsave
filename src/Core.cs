@@ -189,6 +189,9 @@ internal sealed class SaveWorker {
     readonly string[] LastSuccessful={"","","","",""};
     readonly string[] LoggedStatus={"","","","",""};
     readonly Func<int,List<object>> ApplicationProvider;
+    readonly Func<int,AppConnection> ConnectionProvider;
+    DateTime nextPresenceCheck;
+    bool? processRunning;
     readonly Dictionary<string,DateTime>[] Pending={new Dictionary<string,DateTime>(StringComparer.OrdinalIgnoreCase),new Dictionary<string,DateTime>(StringComparer.OrdinalIgnoreCase),new Dictionary<string,DateTime>(StringComparer.OrdinalIgnoreCase),new Dictionary<string,DateTime>(StringComparer.OrdinalIgnoreCase),new Dictionary<string,DateTime>(StringComparer.OrdinalIgnoreCase)};
     void Observe(int index,string path,bool dirty) {
         bool changed;
@@ -208,7 +211,17 @@ internal sealed class SaveWorker {
     }
     void ClearPending(int index) {lock(Gate) {Pending[index].Clear();UpdatePending(index);}}
     readonly int AppIndex;
-    internal SaveWorker(Preferences p,Func<int,List<object>> applicationProvider=null,int appIndex=-1) {Options=p.Copy();ApplicationProvider=applicationProvider;AppIndex=appIndex;}
+    internal SaveWorker(Preferences p,Func<int,List<object>> applicationProvider=null,int appIndex=-1,Func<int,AppConnection> connectionProvider=null) {
+        Options=p.Copy();ApplicationProvider=applicationProvider;AppIndex=appIndex;ConnectionProvider=connectionProvider;
+    }
+    bool? ProcessRunning(int index,bool manual) {
+        if (AppIndex<0 || manual || DateTime.UtcNow>=nextPresenceCheck) {
+            try {processRunning=AppConnection.IsRunningInSession(index);}
+            catch (System.ComponentModel.Win32Exception) {processRunning=null;}
+            nextPresenceCheck=DateTime.UtcNow.AddSeconds(2);
+        }
+        return processRunning;
+    }
     internal void Start() {Worker=new Thread(Loop);Worker.IsBackground=true;Worker.Name="LocalSave app worker "+AppIndex;Worker.SetApartmentState(ApartmentState.STA);Worker.Start();}
     internal void Update(Preferences p) {lock(Gate) {Options=p.Copy();ResetSchedule=true;} Wake.Set();}
     internal void Pause(bool pause) {Paused=pause;Wake.Set();}
@@ -252,24 +265,24 @@ internal sealed class SaveWorker {
                 if(AppIndex>=0 && index!=AppIndex) continue;
                 if(!enabled[index]) {ClearPending(index);lock(Gate) State.Apps[index]="Disabled";continue;}
                 if(Retry.ContainsKey(index) && DateTime.UtcNow<Retry[index] && !manual) continue;
-                object app=null;ExcelConnection excel=null;
+                AppConnection connection=null;
                 try {
-                    List<object> applications=new List<object>();
+                    List<object> applications;
                     if(ApplicationProvider!=null) {
-                        applications.AddRange(ApplicationProvider(index));
-                        if(applications.Count==0) {ClearPending(index);lock(Gate) State.Apps[index]="Not running or not available";continue;}
-                    } else if(index==1) {
-                        excel=ExcelConnection.Open();applications.AddRange(excel.Applications);
-                        if(applications.Count==0) {
-                            if(excel.WindowsFound==0 && excel.ErrorCode==0) ClearPending(index);
-                            lock(Gate) State.Apps[index]=excel.WindowsFound>0?"Excel found; waiting for access\nFinish the cell edit or close any dialog":"Not running or not available";
-                            if(excel.ErrorCode!=0) throw new COMException("Excel connection unavailable",excel.ErrorCode);
-                            continue;
-                        }
+                        applications=ApplicationProvider(index);
                     } else {
-                        try {app=Marshal.GetActiveObject(names[index]+".Application");}
-                        catch(COMException ex) {if(ex.ErrorCode==unchecked((int)0x800401E3)) {ClearPending(index);lock(Gate) State.Apps[index]=index>=3?"Open desktop app; automation unavailable":"Not running or not available";continue;}throw;}
-                        applications.Add(app);
+                        connection=ConnectionProvider!=null?ConnectionProvider(index):AppConnection.Open(index,names[index]);
+                        applications=connection.Applications;
+                    }
+                    if(applications.Count==0) {
+                        bool? running=connection==null?false:connection.Running?true:ProcessRunning(index,manual);
+                        if(running==false && connection!=null && (connection.PresenceUnknown || connection.ErrorCode!=0)) running=null;
+                        if(running==false) ClearPending(index);
+                        string status=running==true?"Running; waiting for access\n"+(index==1?"Finish the cell edit or close app dialogs":"Close app dialogs; retrying"):
+                            running==false?"Not running":"App access unavailable; retrying";
+                        if(connection!=null && connection.ErrorCode!=0) status+=" (0x"+connection.ErrorCode.ToString("X8")+")";
+                        lock(Gate) State.Apps[index]=status;
+                        continue;
                     }
                     int eligible=0,skipped=0,saved=0,total=0;Exception failure=null;
                     HashSet<string> reasons=new HashSet<string>();
@@ -290,10 +303,16 @@ internal sealed class SaveWorker {
                         } catch(Exception ex) {if(failure==null) failure=ex;}
                         finally {Release(files);}
                     }
-                    lock(Gate) State.Apps[index]=total==0?"No open documents":eligible+" eligible"+(skipped>0?" / "+skipped+" skipped":"")+(reasons.Count>0?"\n"+String.Join(", ",reasons):LastSuccessful[index]!=""?"\nLast saved "+LastSuccessful[index]:"\nWaiting for unsaved changes");
+                    bool partial=connection!=null && connection.Partial;
+                    bool waitingForDocument=total==0 && connection!=null && connection.EditorFound;
+                    string summary=total==0?(waitingForDocument || partial?"Document access pending\nClose app dialogs; retrying":"No open documents"):
+                        eligible+" eligible"+(skipped>0?" / "+skipped+" skipped":"")+
+                        (partial?"\nSome windows are unavailable":reasons.Count>0?"\n"+String.Join(", ",reasons):
+                            LastSuccessful[index]!=""?"\nLast saved "+LastSuccessful[index]:"\nWaiting for unsaved changes");
+                    lock(Gate) State.Apps[index]=summary;
                     if(saved>0) Log(names[index]+": saved "+saved+" file(s).");
                     if(failure!=null) throw failure;
-                    if(!StopRequested && (manual || !Paused)) lock(Gate) {
+                    if(!partial && !waitingForDocument && !StopRequested && (manual || !Paused)) lock(Gate) {
                         foreach(string path in new List<string>(Pending[index].Keys)) if(!observed.Contains(path)) Pending[index].Remove(path);
                         UpdatePending(index);
                     }
@@ -304,7 +323,7 @@ internal sealed class SaveWorker {
                     int seconds=editing?1:Math.Min(30,1<<Math.Min(failures-1,5));Retry[index]=DateTime.UtcNow.AddSeconds(seconds);
                     lock(Gate) State.Apps[index]=editing?"Excel is editing or busy\nPress Enter in the cell; retrying automatically":"Retry in "+seconds+"s ("+Code(ex)+")\nCheck app dialogs and activity log";
                     if(failures==1 || failures==6) Log(names[index]+": "+Operation(ex)+" deferred/failed "+Code(ex)+"; retrying. Save manually if needed.");
-                } finally {if(excel!=null) excel.Dispose();Release(app);}
+                } finally {if(connection!=null) connection.Dispose();}
             }
         } finally {lock(Gate) State.Busy=false;Publish();}
     }
